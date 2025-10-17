@@ -1,7 +1,18 @@
 import { Button } from "@/components/ui/button";
 import heroDish from "@/assets/hero-dish.jpg";
+import { useNavigate } from "react-router-dom";
 
 const WelcomeSection = () => {
+  const navigate = useNavigate();
+
+  const handleMenuClick = () => {
+    navigate("/menu");
+  };
+
+  const handleBookingClick = () => {
+    navigate("/booking");
+  };
+
   return (
     <section className="py-20 px-4 relative overflow-hidden">
       <div className="absolute inset-0 opacity-5 pointer-events-none">
@@ -35,10 +46,19 @@ const WelcomeSection = () => {
             </p>
 
             <div className="flex gap-4 pt-4">
-              <Button variant="secondary" size="lg" className="rounded-full">
+              <Button 
+                variant="secondary" 
+                size="lg" 
+                className="rounded-full"
+                onClick={handleMenuClick}
+              >
                 Menu
               </Button>
-              <Button size="lg" className="rounded-full">
+              <Button 
+                size="lg" 
+                className="rounded-full"
+                onClick={handleBookingClick}
+              >
                 BOOK A TABLE
               </Button>
             </div>
