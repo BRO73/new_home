@@ -1,16 +1,13 @@
-import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import SpecialDishes from "@/components/SpecialDishes";
 import WelcomeSection from "@/components/WelcomeSection";
 import ChefSection from "@/components/ChefSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import NewsletterSection from "@/components/NewsletterSection";
-import Footer from "@/components/Footer";
 
-const Index = () => {
+const Homepage = () => {
   return (
     <div className="min-h-screen">
-      <Header />
       <main>
         <HeroSection />
         <SpecialDishes />
@@ -19,9 +16,8 @@ const Index = () => {
         <TestimonialsSection />
         <NewsletterSection />
       </main>
-      <Footer />
     </div>
   );
 };
 
-export default Index;
+export default Homepage;
