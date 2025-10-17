@@ -2,15 +2,29 @@ import { Button } from "@/components/ui/button";
 import { Facebook, Instagram, Youtube } from "lucide-react";
 import heroDish from "@/assets/hero-dish.jpg";
 import restaurantInterior from "@/assets/restaurant-interior.jpg";
-
+import MenuButton from "./MenuButton";
+import BookingButton from "./BookingButton";
 const HeroSection = () => {
   return (
     <section className="pt-32 pb-20 px-4 relative overflow-hidden">
       <div className="absolute inset-0 opacity-5 pointer-events-none">
-        <svg className="absolute top-20 right-10 w-64 h-64" viewBox="0 0 200 200">
-          <path d="M100,20 Q120,40 100,60 Q80,40 100,20" fill="none" stroke="currentColor" strokeWidth="1" />
+        <svg
+          className="absolute top-20 right-10 w-64 h-64"
+          viewBox="0 0 200 200"
+        >
+          <path
+            d="M100,20 Q120,40 100,60 Q80,40 100,20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+          />
           <path d="M100,60 L100,180" stroke="currentColor" strokeWidth="1" />
-          <path d="M80,100 Q100,120 120,100" fill="none" stroke="currentColor" strokeWidth="1" />
+          <path
+            d="M80,100 Q100,120 120,100"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+          />
         </svg>
       </div>
 
@@ -31,16 +45,13 @@ const HeroSection = () => {
             </h1>
 
             <p className="text-muted-foreground text-lg max-w-md">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+              eiusmod tempor incididunt ut labore et dolore magna aliqua.
             </p>
 
             <div className="flex gap-4">
-              <Button variant="secondary" size="lg" className="rounded-full">
-                Menu
-              </Button>
-              <Button size="lg" className="rounded-full">
-                BOOK A TABLE
-              </Button>
+              <MenuButton />
+              <BookingButton />
             </div>
 
             <div className="flex gap-4 pt-4">
@@ -60,12 +71,20 @@ const HeroSection = () => {
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-6">
                 <div className="aspect-square rounded-[3rem] overflow-hidden shadow-dish hover-scale">
-                  <img src={heroDish} alt="Delicious noodle dish" className="w-full h-full object-cover" />
+                  <img
+                    src={heroDish}
+                    alt="Delicious noodle dish"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
               <div className="space-y-6 pt-12">
                 <div className="aspect-square rounded-[3rem] overflow-hidden shadow-dish hover-scale">
-                  <img src={restaurantInterior} alt="Restaurant interior" className="w-full h-full object-cover" />
+                  <img
+                    src={restaurantInterior}
+                    alt="Restaurant interior"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
             </div>

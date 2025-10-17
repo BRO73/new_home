@@ -132,3 +132,16 @@ export interface Booking {
     numGuests?: number;
     updatedAt?: string;
 }
+
+export interface BookingResult {
+    id?: string;
+    bookingNumber?: string;
+    name?: string;
+    guests?: number;
+    booking_time?: string;
+    bookingTime?: string;
+    status?: string;
+    notes?: string;
+    originalFormData?: BookingInfo;
+  }
+  
