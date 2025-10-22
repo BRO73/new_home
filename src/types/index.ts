@@ -45,6 +45,20 @@ export interface MenuItem {
     category: string; // 
 }
 
+export interface MenuItemOrder {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  rating: number;
+  category: string;
+}
+
+export interface CartItem extends MenuItemOrder {
+  quantity: number;
+}
+
 
 export interface PageResponse<T> {
     content: T[];          // danh sách dữ liệu thực sự (list item)
