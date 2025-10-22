@@ -8,7 +8,10 @@ import MenuPage from "./pages/MenuPage";
 import BookingPage from "./pages/BookingPage";
 import Homepage from "./pages/Homepage";
 import Layout from "./components/Layout";
-
+import QRScannerPage from "./pages/QRScannerPage";
+import MenuOrderPage from "./pages/MenuOrderPage";
+import CartItem from "./pages/CartItem";
+import FirebaseOTPLogin from "./pages/FirebaseOtpLogin";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -24,6 +27,10 @@ const App = () => (
             <Route path="/booking" element={<BookingPage />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/qr-scanner" element={<QRScannerPage />} />
+          <Route path="/menu-order" element={<MenuOrderPage />} />
+          <Route path="/cart" element={<CartItem />} />
+          <Route path="/otp-login" element={<FirebaseOTPLogin/>}/>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
