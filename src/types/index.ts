@@ -158,4 +158,30 @@ export interface BookingResult {
     notes?: string;
     originalFormData?: BookingInfo;
   }
-  
+export interface FloorElement {
+    id: number;
+    type: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    color?: string;
+    label?: string;
+    floor: string;
+    tableId?: number;
+}
+// Location
+export interface LocationResponse {
+    id: number;
+    name: string;
+    description?: string;
+}
+export interface TableResponse {
+    id: number;
+    tableNumber: string;
+    capacity: number;
+    locationId: number;
+    locationName: string;
+    status: "Available" | "Occupied" | "Reserved" | "Maintenance";
+}
