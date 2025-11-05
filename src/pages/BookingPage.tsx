@@ -5,12 +5,17 @@ import { FloorViewer } from '@/components/FloorViewer';
 import { useLocations } from '@/hooks/useLocations';
 import { useFloorElements } from '@/hooks/useFloorElements';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {TableResponse} from "@/types";
 import {useTables} from "@/hooks/useTables.ts";
+import {useBooking} from '@/hooks/useBooking';
 
 const BookingPage = () => {
-  const { locations, loading } = useLocations();
+  const [currentTables, setCurrentTables] = useState<TableResponse []| null>(null);
+  const { locations } = useLocations();
   const { data: elements = [] } = useFloorElements();
   const [selectedFloor, setSelectedFloor] = useState<string>('');
+  const { tables, loading, error } = useTables();
+  const{ addBooking } = useBooking();
   // Set floor mặc định khi load xong
   useEffect(() => {
     if (locations.length > 0 && !selectedFloor) {
@@ -69,9 +74,13 @@ const BookingPage = () => {
 
               {locations.map((location) => (
                   <TabsContent key={location.id} value={location.name} className="mt-6">
+
                     <FloorViewer
+
+                        tables={tables}
                         floor={location.name}
                         elements={currentFloorElements}
+                        onSelectTables={(selectedTables) => setCurrentTables(selectedTables)}
                     />
                   </TabsContent>
               ))}
@@ -83,7 +92,10 @@ const BookingPage = () => {
             <Typography variant="h4" sx={{ mb: 3, fontWeight: 600, color: 'hsl(var(--foreground))' }}>
               Reservation Details
             </Typography>
-            <BookingForm />
+            <BookingForm
+                selectedTables={currentTables} // bàn đã chọn (có thể [] ban đầu)
+                onSelectedTablesChange={(tables) => setCurrentTables(currentTables)} // update state khi user chọn/hủy table
+            />
           </Box>
         </Container>
       </Box>

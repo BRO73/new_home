@@ -72,6 +72,19 @@ export interface PageResponse<T> {
 }
 
 
+export interface FloorElement {
+    id: number;
+    type: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    color?: string;
+    label?: string;
+    floor: string;
+    tableId?: number;
+}
 export interface Table {
     id: string;
     name: string;
@@ -86,90 +99,46 @@ export interface Floor {
     name: string;
     tables: Table[];
 }
-
-export interface BookingInfo {
-    name: string;
-    phone: string;
-    email: string;
-    date: string;
-    time: string;
-    guests: number;
-    note?: string; // Thêm trường note (tùy chọn)
-}
-
-export interface BookingResponse {
-    id: string;
-    bookingNumber: string;
-    name: string;
-    phone: string;
-    email: string;
-    bookingTime: string;
-    guests: number;
-    notes?: string;
-    status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-    createdAt: string;
-    updatedAt: string;
-}
-
-export interface CreateBookingRequest {
+export interface BookingRequest {
+    tableIds: number[]; // Danh sách ID bàn
     customerName: string;
     customerPhone: string;
     customerEmail: string;
-    bookingTime: string; // Combined date and time field
     numGuests: number;
-    note?: string;
-}
-
-export interface Booking {
-    id: string;
-    bookingNumber: number;
-    name: string;
-    phone: string;
-    email: string;
-    booking_time: string;
-    guests: number;
-    status: string;
-    notes: string | null;
-    createdAt: string;
-    userId: string;
-    originalFormData?: {
-        name: string;
-        phone: string;
-        email: string;
-        date: string;
-        time: string;
-        guests: number;
-        note: string;
-    };
-    customerName?: string;
-    customerPhone?: string;
-    numGuests?: number;
-    updatedAt?: string;
-}
-
-export interface BookingResult {
-    id?: string;
-    bookingNumber?: string;
-    name?: string;
-    guests?: number;
-    booking_time?: string;
-    bookingTime?: string;
-    status?: string;
+    status?: string; // Có thể bỏ trống, mặc định Pending
     notes?: string;
-    originalFormData?: BookingInfo;
-  }
-export interface FloorElement {
+    staffId?: number;
+    bookingTime: string; // ISO format: 'yyyy-MM-ddTHH:mm:ss'
+}
+
+export interface TableSimpleResponse {
     id: number;
-    type: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    rotation: number;
-    color?: string;
-    label?: string;
-    floor: string;
-    tableId?: number;
+    tableNumber: string;
+    capacity: number;
+    status: string;
+}
+
+
+export interface CustomerSimpleResponse {
+    id: number;
+    username: string;
+}
+
+
+
+export interface BookingResponse {
+    id: number;
+    customerName: string;
+    customerPhone: string;
+    customerEmail: string;
+    bookingTime: string; // ISO 8601 format, e.g. '2025-11-04T17:30:00'
+    numGuests: number;
+    notes: string;
+    status: string;
+    table: TableSimpleResponse[];
+    customer: CustomerSimpleResponse;
+    createdAt: string;
+    updatedAt: string;
 }
 // Location
 export interface LocationResponse {

@@ -11,10 +11,13 @@ export const useTables = () => {
 
   const fetchTables = async () => {
     setLoading(true);
+
     setError(null);
     try {
       const data = await getAllTables();
       setTables(data);
+      console.log("Tables fetched:", data);
+
     } catch (err: any) {
       setError(err.message || "Failed to fetch tables");
     } finally {

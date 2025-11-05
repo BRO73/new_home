@@ -1,26 +1,60 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { FloorElement, TableResponse } from '@/types/index.ts';
-import {useTables} from "@/hooks/useTables.ts";
+import {useEffect, useState} from 'react';
 
 interface FloorViewerProps {
+    onSelectTables?: (tables: TableResponse[]) => void; // callback multi-select
     floor: string;
     elements: FloorElement[];
-    tables?: TableResponse[]; // để lấy capacity giống Konva
+    tables: TableResponse[];
 }
 
-export const FloorViewer = ({ floor, elements, tables = [] }: FloorViewerProps) => {
-    tables = useTables().tables;
-    console.log(tables);
+
+export const FloorViewer = ({
+                                onSelectTables,
+                                floor,
+                                elements = [],
+                                tables = []
+                            }: FloorViewerProps) => {
+    const [selectedTables, setSelectedTables] = useState<TableResponse[]>([]);
+
+// gọi callback khi selectedTables thay đổi
+    useEffect(() => {
+        if (onSelectTables) onSelectTables(selectedTables);
+    }, [selectedTables, onSelectTables]);
+
+    const handleClickTable = (table: TableResponse | null) => {
+        if (!table) return; // ignore nếu table null
+
+        setSelectedTables(prev => {
+            const exists = prev.find(t => t.id === table.id);
+            if (exists) {
+                return prev.filter(t => t.id !== table.id);
+            } else {
+                return [...prev, table];
+            }
+        });
+    };
+
+
+    const handleClickBackground = () => {
+        setSelectedTables([]);
+    };
+
+
+
+    const getTableByElement = (elm: FloorElement): TableResponse | null => {
+        return tables.find(tbl => elm.tableId === tbl.id) || null;
+    };
+
     const getTableCapacity = (elm: FloorElement) => {
         if (elm.tableId != null) {
-            console.log(elm.tableId);
             const table = tables.find(t => t.id === elm.tableId);
             if (table) return table.capacity;
         }
         return 0;
-    }
+    };
 
-    // helper shadeColor cho gradient
     const shadeColor = (color: string, percent: number) => {
         const f = parseInt(color.slice(1), 16),
             t = percent < 0 ? 0 : 255,
@@ -32,178 +66,219 @@ export const FloorViewer = ({ floor, elements, tables = [] }: FloorViewerProps) 
         const newG = Math.round((t - G) * p + G);
         const newB = Math.round((t - B) * p + B);
         return `rgb(${newR}, ${newG}, ${newB})`;
-    }
+    };
+
+    const maxX = Math.max(...elements.map(el => el.x + el.width / 2), 800);
+    const maxY = Math.max(...elements.map(el => el.y + el.height / 2), 600);
+
+    const renderOtherTypes = (element: FloorElement) => {
+        const { x, y, width, height, color, type } = element;
+        const table = getTableByElement(element);
+        const isSelected = table ? selectedTables.some(t => t.id === table.id) : false;
+        const gradientFill = (color ? `url(#grad-${element.id})` : '#999');
+
+        switch (type) {
+            case 'table':
+                return (
+                    <>
+                        <rect
+                            x={x - width / 2}
+                            y={y - height / 2 + 2}
+                            width={width}
+                            height={height}
+                            fill="#00000022"
+                            rx={6}
+                            pointerEvents="none"
+                        />
+                        <rect
+                            x={x - width / 2}
+                            y={y - height / 2}
+                            width={width}
+                            height={height}
+                            fill={gradientFill}
+                            stroke={isSelected ? '#fff' : '#333'} // viền trắng khi chọn
+                            strokeWidth={isSelected ? 4 : 2}
+                            rx={6}
+                            opacity={0.9}
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => {
+                                e.stopPropagation(); // ngăn event bubbling
+                                if (table) handleClickTable(table);
+                            }}
+                        />
+                        <text
+                            x={x}
+                            y={y}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            fontSize="16"
+                            fontWeight="bold"
+                            fill="white"
+                            stroke="#000"
+                            strokeWidth={0.5}
+                            pointerEvents="none"
+                        >
+                            {`${getTableCapacity(element)}P`}
+                        </text>
+                    </>
+                );
+            case 'window':
+                return (
+                    <>
+                        <rect
+                            x={x - width / 2}
+                            y={y - height / 2}
+                            width={width}
+                            height={height}
+                            fill="#CFE8FF"
+                            stroke="#0369A1"
+                            strokeWidth={2}
+                            rx={4}
+                        />
+                        <line
+                            x1={x - width / 2}
+                            y1={y}
+                            x2={x + width / 2}
+                            y2={y}
+                            stroke="#0369A1"
+                            strokeWidth={2}
+                        />
+                        <line
+                            x1={x}
+                            y1={y - height / 2}
+                            x2={x}
+                            y2={y + height / 2}
+                            stroke="#0369A1"
+                            strokeWidth={2}
+                        />
+                    </>
+                );
+            case 'door':
+                return (
+                    <>
+                        <rect
+                            x={x - width / 2}
+                            y={y - height / 2}
+                            width={width}
+                            height={height}
+                            fill="#FFD27F"
+                            stroke="#92400E"
+                            strokeWidth={2}
+                            rx={4}
+                        />
+                        <rect
+                            x={x - (width * 0.7) / 2}
+                            y={y - height / 2}
+                            width={width * 0.7}
+                            height={height * 0.15}
+                            fill="#D97706"
+                            rx={2}
+                        />
+                    </>
+                );
+            default:
+                return null;
+        }
+    };
 
     return (
         <Card className="h-full min-h-[400px]">
             <CardContent className="p-6">
                 <h3 className="text-xl font-semibold mb-4 text-primary">{floor}</h3>
-                <div className="w-full h-[350px] bg-gray-100 rounded-lg relative overflow-hidden border-2 border-gray-200">
-                    <svg width="100%" height="100%" viewBox="0 0 800 600" className="bg-white">
-                        {elements.map((element) => {
+                <div
+                    className="w-full h-[350px] bg-gray-100 rounded-lg relative overflow-hidden border-2 border-gray-200"
+                    onClick={handleClickBackground} // click background -> hủy chọn
+                >
+                    <svg
+                        width="100%"
+                        height="100%"
+                        viewBox={`0 0 ${maxX + 50} ${maxY + 50}`}
+                        className="bg-white"
+                    >
+                        {[
+                            ...elements.filter(el => el.type === "other"),
+                            ...elements.filter(el => el.type === "balcony"),
+                            ...elements.filter(el => !["other", "balcony"].includes(el.type))
+                        ].map((element) => {
                             const { x, y, width, height, color, label, type } = element;
 
-                            // Gradient fill cho bàn / balcony / other
-                            const gradientFill = (color?: string) =>
-                                color
-                                    ? `url(#grad-${element.id})`
-                                    : '#999';
-
-                            return (
-                                <g key={element.id}>
-                                    {/* Define gradient if needed */}
-                                    {(type === 'table' || type === 'balcony' || type === 'other') && (
+                            if (type === 'table' || type === 'balcony' || type === 'other') {
+                                const gradId = `grad-${element.id}`;
+                                const gradientFill = color ? `url(#${gradId})` : '#999';
+                                return (
+                                    <g key={element.id}>
                                         <defs>
-                                            <linearGradient id={`grad-${element.id}`} x1="0" y1="0" x2="0" y2="1">
+                                            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                                                 <stop offset="0%" stopColor={shadeColor(color || '#ccc', 20)} />
                                                 <stop offset="100%" stopColor={shadeColor(color || '#ccc', -10)} />
                                             </linearGradient>
                                         </defs>
-                                    )}
 
-                                    {/* Render shapes */}
-                                    {type === 'table' && (
-                                        <>
+                                        {type === 'other' && (
                                             <rect
                                                 x={x - width / 2}
                                                 y={y - height / 2}
                                                 width={width}
                                                 height={height}
-                                                fill={gradientFill(color)}
+                                                fill={gradientFill}
                                                 stroke="#333"
                                                 strokeWidth={2}
-                                                rx={6}
-                                                opacity={0.9}
+                                                rx={4}
                                             />
-                                            {/* Shadow */}
-                                            <rect
-                                                x={x - width / 2}
-                                                y={y - height / 2 + 2}
-                                                width={width}
-                                                height={height}
-                                                fill="#00000022"
-                                                rx={6}
-                                            />
-                                            {/* Capacity */}
+                                        )}
+
+                                        {type === 'balcony' && (
+                                            <>
+                                                <rect
+                                                    x={x - width / 2}
+                                                    y={y - height / 2}
+                                                    width={width}
+                                                    height={height}
+                                                    fill={gradientFill}
+                                                    stroke="#333"
+                                                    strokeWidth={2}
+                                                    rx={4}
+                                                />
+                                                <line
+                                                    x1={x - width / 2 + 10}
+                                                    y1={y - height / 2 + 10}
+                                                    x2={x + width / 2 - 10}
+                                                    y2={y - height / 2 + 10}
+                                                    stroke="#fff"
+                                                    strokeWidth={2}
+                                                    opacity={0.6}
+                                                />
+                                                <line
+                                                    x1={x - width / 2 + 10}
+                                                    y1={y + height / 2 - 10}
+                                                    x2={x + width / 2 - 10}
+                                                    y2={y + height / 2 - 10}
+                                                    stroke="#fff"
+                                                    strokeWidth={2}
+                                                    opacity={0.6}
+                                                />
+                                            </>
+                                        )}
+
+                                        {type !== "other" && type !== "balcony" && renderOtherTypes(element)}
+
+                                        {label && (
                                             <text
                                                 x={x}
-                                                y={y}
+                                                y={y - height / 2 - 10}
                                                 textAnchor="middle"
-                                                dominantBaseline="middle"
-                                                fontSize="16"
-                                                fontWeight="bold"
-                                                fill="white"
-                                                stroke="#000"
-                                                strokeWidth={0.5}
+                                                fontSize="12"
+                                                fontWeight="600"
+                                                fill="#1F2937"
                                             >
-                                                {`${getTableCapacity(element)}P`}
+                                                {label}
                                             </text>
-                                        </>
-                                    )}
-
-                                    {type === 'window' && (
-                                        <>
-                                            <rect
-                                                x={x - width / 2}
-                                                y={y - height / 2}
-                                                width={width}
-                                                height={height}
-                                                fill="#CFE8FF"
-                                                stroke="#0369A1"
-                                                strokeWidth={2}
-                                                rx={4}
-                                            />
-                                            <line x1={x - width / 2} y1={y} x2={x + width / 2} y2={y} stroke="#0369A1" strokeWidth={2} />
-                                            <line x1={x} y1={y - height / 2} x2={x} y2={y + height / 2} stroke="#0369A1" strokeWidth={2} />
-                                        </>
-                                    )}
-
-                                    {type === 'door' && (
-                                        <>
-                                            <rect
-                                                x={x - width / 2}
-                                                y={y - height / 2}
-                                                width={width}
-                                                height={height}
-                                                fill="#FFD27F"
-                                                stroke="#92400E"
-                                                strokeWidth={2}
-                                                rx={4}
-                                            />
-                                            <rect
-                                                x={x - (width * 0.7) / 2}
-                                                y={y - height / 2}
-                                                width={width * 0.7}
-                                                height={height * 0.15}
-                                                fill="#D97706"
-                                                rx={2}
-                                            />
-                                        </>
-                                    )}
-
-                                    {type === 'balcony' && (
-                                        <>
-                                            <rect
-                                                x={x - width / 2}
-                                                y={y - height / 2}
-                                                width={width}
-                                                height={height}
-                                                fill={gradientFill(color)}
-                                                stroke="#333"
-                                                strokeWidth={2}
-                                                rx={4}
-                                                opacity={0.9}
-                                            />
-                                            <line
-                                                x1={x - width / 2 + 10}
-                                                y1={y - height / 2 + 10}
-                                                x2={x + width / 2 - 10}
-                                                y2={y - height / 2 + 10}
-                                                stroke="#fff"
-                                                strokeWidth={2}
-                                                opacity={0.6}
-                                            />
-                                            <line
-                                                x1={x - width / 2 + 10}
-                                                y1={y + height / 2 - 10}
-                                                x2={x + width / 2 - 10}
-                                                y2={y + height / 2 - 10}
-                                                stroke="#fff"
-                                                strokeWidth={2}
-                                                opacity={0.6}
-                                            />
-                                        </>
-                                    )}
-
-                                    {type === 'other' && (
-                                        <rect
-                                            x={x - width / 2}
-                                            y={y - height / 2}
-                                            width={width}
-                                            height={height}
-                                            fill={gradientFill(color)}
-                                            stroke="#333"
-                                            strokeWidth={2}
-                                            rx={4}
-                                            opacity={0.9}
-                                        />
-                                    )}
-
-                                    {/* Label */}
-                                    {label && (
-                                        <text
-                                            x={x}
-                                            y={y - height / 2 - 10}
-                                            textAnchor="middle"
-                                            fontSize="12"
-                                            fontWeight="600"
-                                            fill="#1F2937"
-                                        >
-                                            {label}
-                                        </text>
-                                    )}
-                                </g>
-                            );
+                                        )}
+                                    </g>
+                                );
+                            } else {
+                                return <g key={element.id}>{renderOtherTypes(element)}</g>;
+                            }
                         })}
                     </svg>
                 </div>
