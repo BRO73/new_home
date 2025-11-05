@@ -1,48 +1,46 @@
-
 export interface CategoryResponse {
-    id: number;
-    name: string;   // "main", "appetizer", "dessert", "beverage", "special"
-    description?: string;
-    imageUrl?: string;
+  id: number;
+  name: string;
+  description?: string;
+  imageUrl?: string;
 }
 export interface CategoryRequest {
-    name: string;
-    description: string;
-    imageUrl: string;
+  name: string;
+  description: string;
+  imageUrl: string;
 }
 
-
 export interface MenuItemResponse {
-    id: number;
-    name: string;
-    description: string;
-    imageUrl: string;
-    price: number;
-    status: "available" | "unavailable" | "seasonal";
-    categoryName: string;
-    createdAt: string;
-    updatedAt: string;
-    deleted: boolean;
-    activated: boolean;
+  id: number;
+  name: string;
+  description: string;
+  imageUrl: string;
+  price: number;
+  status: "available" | "unavailable" | "seasonal";
+  categoryName: string;
+  createdAt: string;
+  updatedAt: string;
+  deleted: boolean;
+  activated: boolean;
 }
 
 export interface MenuItemFormData {
-    name: string;
-    description: string;
-    imageUrl: string;
-    price: number;
-    status: "available" | "unavailable" | "seasonal";
-    categoryName: string; // lưu name của category
+  name: string;
+  description: string;
+  imageUrl: string;
+  price: number;
+  status: "available" | "unavailable" | "seasonal";
+  categoryName: string;
 }
 
 export interface MenuItem {
-    id: number;
-    name: string;
-    description: string;
-    imageUrl?: string;
-    price: number;
-    status: "available" | "unavailable" | "seasonal";
-    category: string; // 
+  id: number;
+  name: string;
+  description: string;
+  imageUrl?: string;
+  price: number;
+  status: "available" | "unavailable" | "seasonal";
+  category: string;
 }
 
 export interface MenuItemOrder {
@@ -59,18 +57,16 @@ export interface CartItem extends MenuItemOrder {
   quantity: number;
 }
 
-
 export interface PageResponse<T> {
-    content: T[];          // danh sách dữ liệu thực sự (list item)
-    totalPages: number;    // tổng số trang
-    totalElements: number; // tổng số phần tử
-    size: number;          // số item mỗi trang
-    number: number;        // số trang hiện tại (0-based)
-    first: boolean;
-    last: boolean;
-    empty: boolean;
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
 }
-
 
 export interface FloorElement {
     id: number;
@@ -92,12 +88,13 @@ export interface Table {
     type: 'square' | 'circle';
     position: { x: number; y: number };
     isAvailable?: boolean;
+
 }
 
 export interface Floor {
-    id: number;
-    name: string;
-    tables: Table[];
+  id: number;
+  name: string;
+  tables: FloorPlanTable[];
 }
 export interface BookingRequest {
     tableIds: number[]; // Danh sách ID bàn
@@ -110,6 +107,7 @@ export interface BookingRequest {
     staffId?: number;
     bookingTime: string; // ISO format: 'yyyy-MM-ddTHH:mm:ss'
 }
+
 
 export interface TableSimpleResponse {
     id: number;
@@ -154,3 +152,54 @@ export interface TableResponse {
     locationName: string;
     status: "Available" | "Occupied" | "Reserved" | "Maintenance";
 }
+
+
+export interface StaffResponse {
+  id: number;
+  fullName: string;
+}
+
+export interface OrderDetailResponse {
+  id: number;
+  menuItem: MenuItemResponse;
+  quantity: number;
+  price: number;
+  specialRequirements?: string;
+}
+
+export interface OrderDetailRequest {
+  menuItemId: number;
+  quantity: number;
+  specialRequirements?: string;
+}
+
+export interface CreateOrderRequest {
+  tableId: number;
+  note?: string;
+  promotionId?: number;
+  items: OrderDetailRequest[];
+}
+
+export interface OrderResponse {
+  id: number;
+  orderNumber: string;
+  orderTime: string;
+  status: string;
+  totalAmount: number;
+  note?: string;
+
+  table: TableResponse;
+  staff?: StaffResponse;
+
+  customerUserId?: number;
+  customerName?: string;
+
+  promotionId?: number;
+
+  items: OrderDetailResponse[];
+
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
