@@ -68,13 +68,27 @@ export interface PageResponse<T> {
   empty: boolean;
 }
 
-export interface FloorPlanTable {
-  id: string;
-  name: string;
-  capacity: number;
-  type: "square" | "circle";
-  position: { x: number; y: number };
-  isAvailable?: boolean;
+export interface FloorElement {
+    id: number;
+    type: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    color?: string;
+    label?: string;
+    floor: string;
+    tableId?: number;
+}
+export interface Table {
+    id: string;
+    name: string;
+    capacity: number;
+    type: 'square' | 'circle';
+    position: { x: number; y: number };
+    isAvailable?: boolean;
+
 }
 
 export interface Floor {
@@ -82,104 +96,63 @@ export interface Floor {
   name: string;
   tables: FloorPlanTable[];
 }
-
-export interface BookingInfo {
-  name: string;
-  phone: string;
-  email: string;
-  date: string;
-  time: string;
-  guests: number;
-  note?: string;
+export interface BookingRequest {
+    tableIds: number[]; // Danh sách ID bàn
+    customerName: string;
+    customerPhone: string;
+    customerEmail: string;
+    numGuests: number;
+    status?: string; // Có thể bỏ trống, mặc định Pending
+    notes?: string;
+    staffId?: number;
+    bookingTime: string; // ISO format: 'yyyy-MM-ddTHH:mm:ss'
 }
+
+
+export interface TableSimpleResponse {
+    id: number;
+    tableNumber: string;
+    capacity: number;
+    status: string;
+}
+
+
+export interface CustomerSimpleResponse {
+    id: number;
+    username: string;
+}
+
+
 
 export interface BookingResponse {
-  id: string;
-  bookingNumber: string;
-  name: string;
-  phone: string;
-  email: string;
-  bookingTime: string;
-  guests: number;
-  notes?: string;
-  status: "pending" | "confirmed" | "cancelled" | "completed";
-  createdAt: string;
-  updatedAt: string;
+    id: number;
+    customerName: string;
+    customerPhone: string;
+    customerEmail: string;
+    bookingTime: string; // ISO 8601 format, e.g. '2025-11-04T17:30:00'
+    numGuests: number;
+    notes: string;
+    status: string;
+    table: TableSimpleResponse[];
+    customer: CustomerSimpleResponse;
+    createdAt: string;
+    updatedAt: string;
 }
-
-export interface CreateBookingRequest {
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string;
-  bookingTime: string;
-  numGuests: number;
-  note?: string;
-}
-
-export interface Booking {
-  id: string;
-  bookingNumber: number;
-  name: string;
-  phone: string;
-  email: string;
-  booking_time: string;
-  guests: number;
-  status: string;
-  notes: string | null;
-  createdAt: string;
-  userId: string;
-  originalFormData?: {
+// Location
+export interface LocationResponse {
+    id: number;
     name: string;
-    phone: string;
-    email: string;
-    date: string;
-    time: string;
-    guests: number;
-    note: string;
-  };
-  customerName?: string;
-  customerPhone?: string;
-  numGuests?: number;
-  updatedAt?: string;
+    description?: string;
 }
-
-export interface BookingResult {
-  id?: string;
-  bookingNumber?: string;
-  name?: string;
-  guests?: number;
-  booking_time?: string;
-  bookingTime?: string;
-  status?: string;
-  notes?: string;
-  originalFormData?: BookingInfo;
-}
-
 export interface TableResponse {
-  id: number;
-  tableNumber: string;
-  capacity: number;
-  locationId: number;
-  locationName: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  deleted: boolean;
-  activated: boolean;
+    id: number;
+    tableNumber: string;
+    capacity: number;
+    locationId: number;
+    locationName: string;
+    status: "Available" | "Occupied" | "Reserved" | "Maintenance";
 }
 
-export interface Table {
-  id: number;
-  tableNumber: string;
-  capacity: number;
-  locationId: number;
-  section: string;
-  status: "available" | "occupied" | "reserved" | "maintenance" | string;
-  createdAt: string;
-  updatedAt: string;
-  deleted: boolean;
-  activated: boolean;
-}
 
 export interface StaffResponse {
   id: number;
@@ -229,3 +202,4 @@ export interface OrderResponse {
   createdAt: string;
   updatedAt: string;
 }
+
