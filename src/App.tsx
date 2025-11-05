@@ -14,7 +14,7 @@ import FirebaseOTPLogin from "./pages/FirebaseOtpLogin";
 import LiveOrderPage from "./pages/LiveOrderPage";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -38,6 +38,7 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route path="/menu-order" element={<MenuOrderPage />} />
               <Route path="/live-order" element={<LiveOrderPage />} />
+              <Route path="/payment-success" element={<PaymentSuccessPage />} />
             </Route>
 
             {/* 404 */}
