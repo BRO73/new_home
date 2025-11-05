@@ -7,20 +7,69 @@ interface FoodDetailProps {
   onClose: () => void;
 }
 
+// === COMPONENT CON ĐỂ VẼ ICON ===
+const MinusIcon = () => (
+  <svg
+    className="w-5 h-5"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2.5} // Dày hơn cho rõ
+      d="M20 12H4"
+    />
+  </svg>
+);
+
+const PlusIcon = () => (
+  <svg
+    className="w-5 h-5"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2.5} // Dày hơn cho rõ
+      d="M12 4v16m8-8H4"
+    />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg
+    className="w-6 h-6"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M6 18L18 6M6 6l12 12"
+    />
+  </svg>
+);
+// ==================================
+
 const FoodDetail: React.FC<FoodDetailProps> = ({ item, onClose }) => {
   const [quantity, setQuantity] = useState(1);
-  const [note, setNote] = useState(""); // Thêm state cho ghi chú
+  const [note, setNote] = useState("");
   const { addToCart } = useCart();
 
   if (!item) return null;
 
+  // --- LOGIC (GIỮ NGUYÊN) ---
   const handleAddToCart = () => {
-    // Tạo description kết hợp mô tả gốc và ghi chú
-    const finalDescription = note 
+    const finalDescription = note
       ? `${item.description} (Ghi chú: ${note})`
       : item.description;
 
-    // Thêm vào giỏ hàng với số lượng và ghi chú đã chọn
     addToCart(
       {
         id: item.id,
@@ -28,180 +77,158 @@ const FoodDetail: React.FC<FoodDetailProps> = ({ item, onClose }) => {
         price: item.price,
         imageUrl: item.imageUrl,
         description: finalDescription,
-      }, 
+      },
       quantity
     );
-    
-    // Đóng popup sau khi thêm
+
     onClose();
-    // Reset form
     setQuantity(1);
     setNote("");
   };
 
   const incrementQuantity = () => {
-    setQuantity(prev => prev + 1);
+    setQuantity((prev) => prev + 1);
   };
 
   const decrementQuantity = () => {
-    setQuantity(prev => (prev > 1 ? prev - 1 : 1));
+    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
   };
 
   const totalPrice = item.price * quantity;
-
-  // Kiểm tra status (xử lý cả chữ hoa và chữ thường)
   const isAvailable = item.status.toLowerCase() === "available";
+  // --- KẾT THÚC LOGIC ---
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50 safe-area-padding"
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm"
       onClick={onClose}
     >
-      <div 
-        className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+      {/* === MODAL CHÍNH (LIGHT THEME - GIỐNG ẢNH 2) === */}
+      <div
+        className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900">Chi tiết món ăn</h2>
-          <button
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition duration-200"
-            onClick={onClose}
-            aria-label="Đóng"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+        {/* Nút Đóng (Giống ảnh 2) */}
+        <button
+          onClick={onClose}
+          aria-label="Đóng"
+          className="absolute top-5 right-5 z-20 p-2 bg-white/90 rounded-full text-gray-700 hover:bg-gray-100 transition shadow-md backdrop-blur-sm"
+        >
+          <CloseIcon />
+        </button>
 
-        {/* Hình ảnh */}
-        <div className="relative">
+        {/* 1. Hero Image & Status (Giống ảnh 2) */}
+        <div className="relative flex-shrink-0">
           <img
-            src={item.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&h=400&fit=crop"}
+            src={
+              item.imageUrl ||
+              "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&h=400&fit=crop"
+            }
             alt={item.name}
-            className="w-full h-48 sm:h-56 object-cover"
+            className="w-full h-64 sm:h-72 object-cover"
           />
-          {/* Badge trạng thái */}
-          <div className="absolute top-3 right-3">
-            <span
-              className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
-                isAvailable
-                  ? "bg-green-500 text-white"
-                  : item.status.toLowerCase() === "seasonal"
-                  ? "bg-blue-500 text-white"
-                  : "bg-red-500 text-white"
-              }`}
-            >
-              {isAvailable 
-                ? "Có sẵn" 
-                : item.status.toLowerCase() === "seasonal"
-                ? "Theo mùa"
-                : "Hết hàng"
-              }
-            </span>
-          </div>
+          {/* Status Badge (Giống ảnh 2) */}
+          <span
+            className={`absolute top-5 left-5 inline-flex items-center px-3.5 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-sm ${
+              isAvailable
+                ? "bg-emerald-500 text-white" // Màu xanh lá cây đẹp hơn
+                : "bg-rose-500 text-white" // Màu đỏ hồng
+            }`}
+          >
+            {isAvailable ? "Có sẵn" : "Hết hàng"}
+          </span>
         </div>
 
-        {/* Nội dung */}
-        <div className="p-4 sm:p-6">
-          {/* Tên món và giá */}
-          <div className="mb-4">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{item.name}</h1>
-            <div className="flex items-center justify-between">
-              <span className="text-2xl sm:text-3xl font-bold text-amber-600">
-                {item.price.toLocaleString('vi-VN')} VND
-              </span>
-            </div>
+        {/* 2. Header (Tên, Category & Số lượng) (Giống ảnh 2) */}
+        <div className="flex-shrink-0 px-6 pt-6 pb-4 flex justify-between items-start border-b border-gray-100">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+              {item.name}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1.5 capitalize font-medium">
+              {item.category}
+            </p>
           </div>
 
+          {/* Bộ chọn số lượng (Giống ảnh 2) */}
+          {isAvailable && (
+            <div className="flex items-center gap-2 flex-shrink-0 ml-4 bg-gray-100 rounded-full p-1">
+              <button
+                onClick={decrementQuantity}
+                className="w-8 h-8 rounded-full bg-white text-gray-700 flex items-center justify-center hover:bg-gray-200 transition shadow-sm border border-gray-200"
+                aria-label="Giảm số lượng"
+              >
+                <MinusIcon />
+              </button>
+              <span className="text-lg font-bold text-gray-900 min-w-[28px] text-center">
+                {quantity}
+              </span>
+              <button
+                onClick={incrementQuantity}
+                className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-gray-800 transition shadow-sm"
+                aria-label="Tăng số lượng"
+              >
+                <PlusIcon />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* 3. Vùng Nội dung (Cuộn được) (Giống ảnh 2) */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
           {/* Mô tả */}
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Mô tả</h3>
-            <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-2">
+              Mô tả
+            </h3>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               {item.description}
             </p>
           </div>
 
-          {/* Thông tin danh mục */}
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <h3 className="text-sm font-semibold text-gray-700 mb-1">Danh mục</h3>
-            <p className="text-gray-600 text-sm">{item.category}</p>
-          </div>
-
-          {/* Ô nhập ghi chú */}
+          {/* Ghi chú */}
           {isAvailable && (
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Ghi chú cho món ăn</h3>
+            <div className="mt-6">
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">
+                Ghi chú
+              </h3>
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Thêm ghi chú cho món ăn (không cay, ít đường, v.v.)"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                placeholder="Ví dụ: Không cay, ít đường, không hành..."
+                className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none text-sm transition"
                 rows={3}
               />
             </div>
           )}
-
-          {/* Chọn số lượng - Chỉ hiện khi có sẵn */}
-          {isAvailable && (
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Số lượng</h3>
-              <div className="flex items-center justify-between max-w-xs">
-                <button
-                  onClick={decrementQuantity}
-                  className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition duration-200"
-                  aria-label="Giảm số lượng"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                  </svg>
-                </button>
-                
-                <span className="text-xl font-semibold text-gray-900 min-w-12 text-center">
-                  {quantity}
-                </span>
-                
-                <button
-                  onClick={incrementQuantity}
-                  className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition duration-200"
-                  aria-label="Tăng số lượng"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Footer với nút hành động */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={onClose}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-200 font-medium text-sm sm:text-base order-2 sm:order-1"
-            >
-              Đóng
-            </button>
-            
+        {/* 4. Footer (Tổng tiền & Nút Add) (Giống ảnh 2) */}
+        <div className="flex-shrink-0 bg-white px-6 py-5 border-t border-gray-100 shadow-inner-top">
+          <div className="flex justify-between items-center gap-4">
+            {/* Tổng tiền */}
+            <div>
+              <h3 className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
+                Tổng cộng
+              </h3>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">
+                {isAvailable
+                  ? `${totalPrice.toLocaleString("vi-VN")}₫`
+                  : `${item.price.toLocaleString("vi-VN")}₫`}
+              </p>
+            </div>
+
+            {/* Nút Thêm vào giỏ */}
             <button
               onClick={handleAddToCart}
               disabled={!isAvailable}
-              className={`px-6 py-3 rounded-lg transition duration-200 font-medium text-sm sm:text-base flex items-center justify-center gap-2 ${
+              className={`px-8 py-4 rounded-full transition duration-200 font-bold text-base flex items-center justify-center gap-2 shadow-lg flex-shrink-0 ${
                 isAvailable
-                  ? "bg-amber-500 text-white hover:bg-amber-600"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              } order-1 sm:order-2 flex-1`}
+                  ? "bg-gray-900 text-white hover:bg-gray-800 active:scale-95 hover:shadow-xl"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              {isAvailable 
-                ? `Thêm vào giỏ - ${totalPrice.toLocaleString('vi-VN')} VND`
-                : "Hết hàng"
-              }
+              {isAvailable ? "Thêm vào giỏ" : "Hết hàng"}
             </button>
           </div>
         </div>
