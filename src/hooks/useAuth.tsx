@@ -6,61 +6,103 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import api from "@/api/axiosInstance"; // Import axios instance của bạn
+import api from "@/api/axiosInstance";
 
-// Định nghĩa "hình dạng" của Context
 interface AuthContextType {
-  isAuthenticated: boolean; // Trạng thái đăng nhập (true/false)
-  token: string | null; // Token (để debug hoặc dùng nếu cần)
-  login: (token: string) => void; // Hàm để đăng nhập
-  logout: () => void; // Hàm để đăng xuất
+  isAuthenticated: boolean;
+  token: string | null;
+  login: (token: string, phone?: string) => void; // Thêm phone parameter
+  logout: () => void;
 }
 
-// Tạo Context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * Component Provider: Bọc toàn bộ ứng dụng của bạn (trong main.tsx)
- * Nó sẽ quản lý trạng thái token và cung cấp các hàm login/logout.
- */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  // 1. Lấy token từ localStorage khi tải trang lần đầu
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem("accessToken")
   );
 
-  // 2. Tự động cập nhật axios header VÀ localStorage mỗi khi token thay đổi
-  useEffect(() => {
-    if (token) {
-      // Gán token vào header cho mọi request
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      localStorage.setItem("accessToken", token);
-    } else {
-      // Xóa token khỏi header
-      delete api.defaults.headers.common["Authorization"];
-      localStorage.removeItem("accessToken");
+  // Hàm đồng bộ hoá authentication state
+  const syncAuthState = useCallback(() => {
+    const currentToken = localStorage.getItem("accessToken");
+    const currentPhone = localStorage.getItem("userPhone");
+
+    // Nếu không có token nhưng có phone -> xoá phone
+    if (!currentToken && currentPhone) {
+      localStorage.removeItem("userPhone");
+      console.log("Đồng bộ: Xoá userPhone do thiếu accessToken");
     }
-  }, [token]); // Chạy lại mỗi khi 'token' thay đổi
+    
+    // Nếu có token nhưng không có phone -> xoá token (trường hợp hiếm)
+    if (currentToken && !currentPhone) {
+      localStorage.removeItem("accessToken");
+      setToken(null);
+      console.log("Đồng bộ: Xoá accessToken do thiếu userPhone");
+    }
 
-  // 3. Hàm đăng nhập (dùng useCallback để tối ưu)
-  const login = useCallback((newToken: string) => {
+    return { token: currentToken, phone: currentPhone };
+  }, []);
+
+  useEffect(() => {
+    // Đồng bộ state khi component mount
+    const { token: syncedToken } = syncAuthState();
+    if (syncedToken !== token) {
+      setToken(syncedToken);
+    }
+  }, [syncAuthState, token]);
+
+  useEffect(() => {
+    const { token: currentToken } = syncAuthState();
+    
+    if (currentToken) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${currentToken}`;
+      console.log("Đã thiết lập Authorization header");
+    } else {
+      delete api.defaults.headers.common["Authorization"];
+      console.log("Đã xoá Authorization header");
+    }
+  }, [token, syncAuthState]);
+
+  // Lắng nghe sự kiện storage change từ các tab khác
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "accessToken" || e.key === "userPhone") {
+        console.log(`Storage changed: ${e.key}`, e.newValue);
+        syncAuthState();
+        
+        // Cập nhật token state nếu accessToken thay đổi
+        if (e.key === "accessToken") {
+          setToken(e.newValue);
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [syncAuthState]);
+
+  const login = useCallback((newToken: string, phone?: string) => {
+    localStorage.setItem("accessToken", newToken);
+    if (phone) {
+      localStorage.setItem("userPhone", phone);
+    }
     setToken(newToken);
-  }, []); // Hàm này không bao giờ thay đổi
+    console.log("Đăng nhập thành công, đã lưu accessToken và userPhone");
+  }, []);
 
-  // 4. Hàm đăng xuất (dùng useCallback để tối ưu)
   const logout = useCallback(() => {
+    // Xoá cả accessToken và userPhone cùng lúc
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userPhone");
     setToken(null);
-    // Bạn có thể thêm logic redirect về /login tại đây nếu muốn
-    // (nhưng thường để component tự xử lý)
-  }, []); // Hàm này không bao giờ thay đổi
+    console.log("Đăng xuất: Đã xoá accessToken và userPhone");
+  }, []);
 
-  // 5. Tối ưu hóa giá trị context bằng useMemo
-  // Chỉ tính toán lại khi 'token' thay đổi
   const contextValue = useMemo(
     () => ({
-      isAuthenticated: !!token, // '!!' chuyển string (hoặc null) thành boolean
+      isAuthenticated: !!token,
       token: token,
       login,
       logout,
@@ -73,15 +115,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-/**
- * Custom Hook: `useAuth`
- * Các component con (như ProtectedRoute) sẽ dùng hook này
- * để lấy trạng thái và các hàm (isAuthenticated, login, logout).
- */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    // Đảm bảo hook được dùng bên trong <AuthProvider>
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
-import { Button } from "@/components/ui/button";
 import { createPaymentLink } from "@/api/payment.api";
 import {
   getActiveOrdersByTable,
@@ -13,74 +12,83 @@ import {
   MoreVertical,
   Plus,
   FileText,
-  AlertCircle,
-  X,
-  MoreHorizontal,
   CreditCard,
 } from "lucide-react";
-import {
-  OrderResponse,
-  CreateOrderRequest,
-  OrderDetailRequest,
-} from "@/types/index";
+import { OrderResponse, OrderDetailRequest } from "@/types/index";
+import { ErrorBanner } from "@/components/ErrorBanner";
+import { OrderItemCard } from "@/components/OrderItemCard";
+import { CallStaffModal } from "@/components/CallStaffModal";
+import { PaymentModal } from "@/components/PaymentModal";
+import { NoteModal } from "@/components/NoteModal";
 
-// =====================================================
-// TYPES
-// =====================================================
 type LocalCartItem = {
   menuItemId: number;
   quantity: number;
   name: string;
   price: number;
+  note?: string;
 };
 
 type LocalCartsState = Record<number, LocalCartItem[]>;
 
-// =====================================================
-// STORAGE KEYS HELPERS
-// =====================================================
 const getStorageKeys = (tableId: number) => ({
   activeOrder: `activeOrderId_table_${tableId}`,
   pendingOrder: `pendingOrderId_table_${tableId}`,
 });
 
-// =====================================================
-// MAIN COMPONENT
-// =====================================================
+// Key for localStorage
+const LOCAL_CARTS_STORAGE_KEY = 'restaurant_local_carts';
+
 const LiveOrderPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // === URL Params ===
   const params = new URLSearchParams(location.search);
   const tableIdFromUrl = params.get("tableId");
   const tableId = tableIdFromUrl ? Number(tableIdFromUrl) : null;
   const storageKeys = tableId ? getStorageKeys(tableId) : null;
 
-  // === Cart Hook (chỉ dùng để nhận món từ MenuOrderPage) ===
   const { cartItems, clearCart } = useCart();
 
-  // === State ===
   const [tableIdState, setTableIdState] = useState<number | null>(tableId);
   const [tableName, setTableName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showError, setShowError] = useState<boolean>(false);
-  const [isProcessingPayment, setIsProcessingPayment] =
-    useState<boolean>(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
+  const [showCallStaffModal, setShowCallStaffModal] = useState<boolean>(false);
+  const [editingNoteItem, setEditingNoteItem] = useState<{
+    menuItemId: number;
+    name: string;
+    currentNote?: string;
+  } | null>(null);
 
   const [orders, setOrders] = useState<OrderResponse[]>([]);
   const [activeOrderId, setActiveOrderId] = useState<number | null>(null);
   const [localCarts, setLocalCarts] = useState<LocalCartsState>({});
 
-  // ✅ Ref để track xem đã xử lý cart chưa
   const hasProcessedCartRef = useRef(false);
 
-  // =====================================================
-  // 1. LOAD ORDERS (Initial Load)
-  // =====================================================
+  // Load localCarts từ localStorage khi component mount
+  useEffect(() => {
+    const savedLocalCarts = localStorage.getItem(LOCAL_CARTS_STORAGE_KEY);
+    if (savedLocalCarts) {
+      try {
+        const parsedLocalCarts = JSON.parse(savedLocalCarts);
+        setLocalCarts(parsedLocalCarts);
+      } catch (error) {
+        console.error('Error loading localCarts from localStorage:', error);
+      }
+    }
+  }, []);
+
+  // Lưu localCarts vào localStorage mỗi khi localCarts thay đổi
+  useEffect(() => {
+    localStorage.setItem(LOCAL_CARTS_STORAGE_KEY, JSON.stringify(localCarts));
+  }, [localCarts]);
+
   useEffect(() => {
     if (!tableId || !storageKeys) {
       setError("Không tìm thấy tableId trên URL.");
@@ -102,7 +110,6 @@ const LiveOrderPage: React.FC = () => {
 
       let loadedOrders = await getActiveOrdersByTable(id);
 
-      // Tạo order mới nếu chưa có
       if (loadedOrders.length === 0) {
         console.log("Không tìm thấy order, tạo order mới...");
         const newOrder = await createOrder({ tableId: id, items: [] });
@@ -111,25 +118,20 @@ const LiveOrderPage: React.FC = () => {
 
       setOrders(loadedOrders);
 
-      // ✅ LOGIC CHỌN ACTIVE ORDER
-      // Ưu tiên: pendingOrderId > savedActiveId > order đầu tiên
       const pendingOrderId = sessionStorage.getItem(storageKeys.pendingOrder);
       const savedActiveId = sessionStorage.getItem(storageKeys.activeOrder);
 
       let targetOrderId: number | null = null;
 
-      // Check pending order (từ MenuOrderPage quay lại)
       if (pendingOrderId) {
         const pendingId = parseInt(pendingOrderId, 10);
         if (loadedOrders.some((o) => o.id === pendingId)) {
           targetOrderId = pendingId;
           console.log(`✅ Sử dụng pendingOrderId: ${pendingId}`);
         }
-        // Clear pending flag
         sessionStorage.removeItem(storageKeys.pendingOrder);
       }
 
-      // Fallback to saved active order
       if (!targetOrderId && savedActiveId) {
         const savedId = parseInt(savedActiveId, 10);
         if (loadedOrders.some((o) => o.id === savedId)) {
@@ -138,7 +140,6 @@ const LiveOrderPage: React.FC = () => {
         }
       }
 
-      // Final fallback: first order
       if (!targetOrderId) {
         targetOrderId = loadedOrders[0].id;
         console.log(`✅ Fallback to first order: ${targetOrderId}`);
@@ -154,9 +155,6 @@ const LiveOrderPage: React.FC = () => {
     }
   };
 
-  // =====================================================
-  // 2. LƯU ACTIVE ORDER ID VÀO SESSION STORAGE
-  // =====================================================
   useEffect(() => {
     if (activeOrderId && storageKeys) {
       sessionStorage.setItem(storageKeys.activeOrder, activeOrderId.toString());
@@ -164,17 +162,13 @@ const LiveOrderPage: React.FC = () => {
     }
   }, [activeOrderId, storageKeys]);
 
-  // =====================================================
-  // 3. HANDOFF TỪ MENU PAGE (Transfer global cart → local cart)
-  // =====================================================
   useEffect(() => {
-    // ✅ CRITICAL FIX: Kiểm tra tất cả điều kiện cần thiết
     if (
       cartItems.length === 0 ||
       !storageKeys ||
       !activeOrderId ||
       orders.length === 0 ||
-      hasProcessedCartRef.current // Đã xử lý rồi thì skip
+      hasProcessedCartRef.current
     ) {
       return;
     }
@@ -183,7 +177,6 @@ const LiveOrderPage: React.FC = () => {
     console.log("📦 Cart items:", cartItems);
     console.log("🎯 Active Order ID:", activeOrderId);
 
-    // ✅ ĐỌC PENDING ORDER ID (được set từ MenuOrderPage)
     const pendingOrderId = sessionStorage.getItem(storageKeys.pendingOrder);
     const targetOrderId = pendingOrderId
       ? parseInt(pendingOrderId, 10)
@@ -191,7 +184,6 @@ const LiveOrderPage: React.FC = () => {
 
     console.log("🎯 Target Order ID:", targetOrderId);
 
-    // Verify order tồn tại
     const targetOrderExists = orders.some((o) => o.id === targetOrderId);
     if (!targetOrderExists) {
       console.error(`❌ Order ${targetOrderId} không tồn tại trong danh sách`);
@@ -205,7 +197,6 @@ const LiveOrderPage: React.FC = () => {
 
     console.log(`✅ Transfer cart vào Order: ${targetOrderId}`);
 
-    // Transfer items
     setLocalCarts((prevLocalCarts) => {
       const newLocalCarts = { ...prevLocalCarts };
       const currentCart = newLocalCarts[targetOrderId] || [];
@@ -216,6 +207,10 @@ const LiveOrderPage: React.FC = () => {
         );
         if (existingItem) {
           existingItem.quantity += item.quantity;
+          // Giữ nguyên ghi chú nếu có, nếu item mới có ghi chú thì cập nhật
+          if (item.note) {
+            existingItem.note = item.note;
+          }
           console.log(
             `➕ Tăng số lượng ${item.name}: ${existingItem.quantity}`
           );
@@ -225,6 +220,7 @@ const LiveOrderPage: React.FC = () => {
             quantity: item.quantity,
             name: item.name,
             price: item.price,
+            note: item.note, // Thêm ghi chú nếu có
           });
           console.log(`🆕 Thêm mới ${item.name}: ${item.quantity}`);
         }
@@ -235,7 +231,6 @@ const LiveOrderPage: React.FC = () => {
       return newLocalCarts;
     });
 
-    // Đảm bảo UI focus vào đúng order
     if (targetOrderId !== activeOrderId) {
       console.log(
         `🔄 Switch active order từ ${activeOrderId} → ${targetOrderId}`
@@ -243,22 +238,14 @@ const LiveOrderPage: React.FC = () => {
       setActiveOrderId(targetOrderId);
     }
 
-    // Mark as processed
     hasProcessedCartRef.current = true;
-
-    // Clear cart
     clearCart();
-    console.log("🧹 Cleared global cart");
 
-    // Reset flag sau 1s để cho phép xử lý lần sau
     setTimeout(() => {
       hasProcessedCartRef.current = false;
     }, 1000);
   }, [cartItems, activeOrderId, orders, storageKeys, clearCart]);
 
-  // =====================================================
-  // 4. TẠO ORDER MỚI
-  // =====================================================
   const handleCreateOrder = async () => {
     if (!tableId) return;
 
@@ -273,9 +260,6 @@ const LiveOrderPage: React.FC = () => {
     }
   };
 
-  // =====================================================
-  // 5. GỬI THÔNG BÁO (Submit new items to server)
-  // =====================================================
   const handleSubmitNewItems = async () => {
     if (!tableId || !activeOrderId || isSubmitting) return;
 
@@ -288,19 +272,17 @@ const LiveOrderPage: React.FC = () => {
     const apiItems: OrderDetailRequest[] = itemsToSubmit.map((item) => ({
       menuItemId: item.menuItemId,
       quantity: item.quantity,
-      specialRequirements: "",
+      specialRequirements: item.note || "", // Gửi ghi chú lên server
     }));
 
     try {
       await addItemsToOrder(activeOrderId, apiItems);
 
-      // Clear local cart cho order này
       setLocalCarts((prev) => ({
         ...prev,
         [activeOrderId]: [],
       }));
 
-      // Reload orders
       await loadOrders(tableId);
     } catch (err) {
       console.error("Lỗi khi gửi đơn hàng:", err);
@@ -311,9 +293,6 @@ const LiveOrderPage: React.FC = () => {
     }
   };
 
-  // =====================================================
-  // 6. XỬ LÝ THANH TOÁN
-  // =====================================================
   const handleRequestPayment = async () => {
     console.log("🔔 handleRequestPayment called");
     console.log("Active Order ID:", activeOrderId);
@@ -325,7 +304,6 @@ const LiveOrderPage: React.FC = () => {
       return;
     }
 
-    // Kiểm tra nếu còn món chưa gửi thông báo
     const currentLocalCart = localCarts[activeOrderId] || [];
     if (currentLocalCart.length > 0) {
       console.log("❌ Còn món chưa gửi thông báo:", currentLocalCart.length);
@@ -345,19 +323,16 @@ const LiveOrderPage: React.FC = () => {
     setError(null);
 
     try {
-      // Tạo return và cancel URLs
       const currentUrl = window.location.origin;
       const returnUrl = `${currentUrl}/payment-success?orderId=${activeOrderId}&tableId=${tableId}`;
       const cancelUrl = `${currentUrl}/live-order?tableId=${tableId}`;
 
-      // Gọi API tạo payment link
       const paymentResponse = await createPaymentLink({
         orderId: activeOrderId,
         returnUrl: returnUrl,
         cancelUrl: cancelUrl,
       });
 
-      // Redirect đến trang thanh toán
       if (paymentResponse.checkoutUrl) {
         window.location.href = paymentResponse.checkoutUrl;
       } else {
@@ -373,9 +348,68 @@ const LiveOrderPage: React.FC = () => {
     }
   };
 
-  // =====================================================
-  // 7. DISPLAY ITEMS (Gộp DB + Local)
-  // =====================================================
+  const handleSelectCallOption = (reason: string) => {
+    console.log(`Gọi nhân viên vì: ${reason}`);
+    setShowCallStaffModal(false);
+  };
+
+  // Hàm xử lý mở modal ghi chú
+  const handleEditNote = (menuItemId: number, name: string, currentNote?: string) => {
+    setEditingNoteItem({ menuItemId, name, currentNote });
+  };
+
+  // Hàm lưu ghi chú
+  const handleSaveNote = (note: string) => {
+    if (!editingNoteItem || !activeOrderId) return;
+
+    setLocalCarts((prevLocalCarts) => {
+      const newLocalCarts = { ...prevLocalCarts };
+      const currentCart = newLocalCarts[activeOrderId] || [];
+
+      const existingItem = currentCart.find(item => item.menuItemId === editingNoteItem.menuItemId);
+      if (existingItem) {
+        existingItem.note = note;
+      } else {
+        // Nếu item chưa có trong local cart, tạo mới
+        const displayItem = displayItems.find(item => item.menuItemId === editingNoteItem.menuItemId);
+        if (displayItem) {
+          currentCart.push({
+            menuItemId: editingNoteItem.menuItemId,
+            quantity: displayItem.localQty,
+            name: editingNoteItem.name,
+            price: displayItem.price,
+            note: note,
+          });
+        }
+      }
+
+      newLocalCarts[activeOrderId] = currentCart;
+      return newLocalCarts;
+    });
+
+    setEditingNoteItem(null);
+  };
+
+  // Hàm xoá ghi chú
+  const handleRemoveNote = () => {
+    if (!editingNoteItem || !activeOrderId) return;
+
+    setLocalCarts((prevLocalCarts) => {
+      const newLocalCarts = { ...prevLocalCarts };
+      const currentCart = newLocalCarts[activeOrderId] || [];
+
+      const existingItem = currentCart.find(item => item.menuItemId === editingNoteItem.menuItemId);
+      if (existingItem) {
+        delete existingItem.note;
+      }
+
+      newLocalCarts[activeOrderId] = currentCart;
+      return newLocalCarts;
+    });
+
+    setEditingNoteItem(null);
+  };
+
   const displayItems = useMemo(() => {
     if (!activeOrderId) return [];
 
@@ -389,6 +423,7 @@ const LiveOrderPage: React.FC = () => {
       price: number;
       dbQty: number;
       localQty: number;
+      note?: string;
     };
 
     const itemMap = new Map<number, DisplayItem>();
@@ -401,6 +436,7 @@ const LiveOrderPage: React.FC = () => {
         price: item.price,
         dbQty: item.quantity,
         localQty: 0,
+        note: item.specialRequirements || undefined, // Lấy ghi chú từ DB
       });
     }
 
@@ -409,6 +445,10 @@ const LiveOrderPage: React.FC = () => {
       const existing = itemMap.get(item.menuItemId);
       if (existing) {
         existing.localQty += item.quantity;
+        // Ưu tiên ghi chú từ local cart (nếu có)
+        if (item.note) {
+          existing.note = item.note;
+        }
       } else {
         itemMap.set(item.menuItemId, {
           menuItemId: item.menuItemId,
@@ -416,6 +456,7 @@ const LiveOrderPage: React.FC = () => {
           price: item.price,
           dbQty: 0,
           localQty: item.quantity,
+          note: item.note, // Lấy ghi chú từ local cart
         });
       }
     }
@@ -423,9 +464,6 @@ const LiveOrderPage: React.FC = () => {
     return Array.from(itemMap.values());
   }, [activeOrderId, orders, localCarts]);
 
-  // =====================================================
-  // 8. QUANTITY CHANGE HANDLER
-  // =====================================================
   const handleQuantityChange = (menuItemId: number, totalQuantity: number) => {
     if (!activeOrderId) return;
 
@@ -449,12 +487,14 @@ const LiveOrderPage: React.FC = () => {
         );
         if (existingItem) {
           existingItem.quantity = newLocalQty;
+          // Giữ nguyên ghi chú khi thay đổi số lượng
         } else {
           currentCart.push({
             menuItemId: menuItemId,
             quantity: newLocalQty,
             name: displayItem.name,
             price: displayItem.price,
+            note: displayItem.note, // Giữ nguyên ghi chú
           });
         }
       }
@@ -464,21 +504,18 @@ const LiveOrderPage: React.FC = () => {
     });
   };
 
-  // =====================================================
-  // 9. CALCULATIONS
-  // =====================================================
   const currentLocalCart = localCarts[activeOrderId] || [];
 
   const newItemsTotal =
     currentLocalCart.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
-    ) / 100; // Chia 100 để test
+    ) / 100;
 
   const confirmedTotal = useMemo(() => {
     return (
       displayItems.reduce((sum, item) => sum + item.price * item.dbQty, 0) / 100
-    ); // Chia 100 để test
+    );
   }, [displayItems]);
 
   const grandTotal = confirmedTotal + newItemsTotal;
@@ -490,25 +527,19 @@ const LiveOrderPage: React.FC = () => {
     );
   }, [displayItems]);
 
-  // =====================================================
-  // 10. NAVIGATION TO MENU
-  // =====================================================
   const handleNavigateToMenu = () => {
     if (!tableId || !activeOrderId || !storageKeys) return;
 
-    // ✅ LƯU PENDING ORDER ID để MenuOrderPage biết
     sessionStorage.setItem(storageKeys.pendingOrder, activeOrderId.toString());
     console.log(`🎯 Set pendingOrderId: ${activeOrderId}`);
 
-    // Navigate với state
     navigate(`/menu-order?tableId=${tableId}`, {
       state: { targetOrderId: activeOrderId },
     });
   };
 
-  // =====================================================
-  // 11. RENDER
-  // =====================================================
+  const currentOrderIndex = orders.findIndex((o) => o.id === activeOrderId) + 1;
+
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       {/* Header */}
@@ -522,7 +553,10 @@ const LiveOrderPage: React.FC = () => {
         <h1 className="text-base font-semibold text-gray-900">
           {loading ? "Đang tải..." : tableName || `Bàn ${tableIdState}`}
         </h1>
-        <button className="h-10 w-10 flex items-center justify-center hover:bg-gray-100 rounded-lg">
+        <button 
+          className="h-10 w-10 flex items-center justify-center hover:bg-gray-100 rounded-lg"
+          onClick={() => setShowCallStaffModal(true)}
+        >
           <MoreVertical className="h-6 w-6 text-gray-700" />
         </button>
       </header>
@@ -590,8 +624,10 @@ const LiveOrderPage: React.FC = () => {
                 onQuantityChange={(q) =>
                   handleQuantityChange(item.menuItemId, q)
                 }
+                onEditNote={() => handleEditNote(item.menuItemId, item.name, item.note)}
                 isNew={isNewOnly}
                 dbQuantity={item.dbQty}
+                note={item.note}
               />
             );
           })}
@@ -624,7 +660,7 @@ const LiveOrderPage: React.FC = () => {
             </span>
           </span>
           <span className="text-2xl font-bold text-gray-900">
-            {grandTotal.toLocaleString()}
+            {grandTotal.toLocaleString()} đ
           </span>
         </div>
 
@@ -658,143 +694,37 @@ const LiveOrderPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Payment Confirmation Modal */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                Xác nhận thanh toán
-              </h3>
-              <p className="text-sm text-gray-600">
-                Bạn muốn thanh toán cho Order{" "}
-                {orders.findIndex((o) => o.id === activeOrderId) + 1}?
-              </p>
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">Tổng tiền</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {confirmedTotal.toLocaleString()} đ
-                </p>
-              </div>
-            </div>
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        onConfirm={processPayment}
+        isProcessing={isProcessingPayment}
+        orderNumber={currentOrderIndex}
+        totalAmount={confirmedTotal}
+      />
 
-            <div className="flex gap-3">
-              <button
-                className="flex-1 h-11 rounded-lg border-2 border-gray-300 bg-white hover:bg-gray-50 active:bg-gray-100 text-sm font-medium text-gray-700"
-                onClick={() => setShowPaymentModal(false)}
-                disabled={isProcessingPayment}
-              >
-                Hủy
-              </button>
-              <button
-                className="flex-1 h-11 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={processPayment}
-                disabled={isProcessingPayment}
-              >
-                {isProcessingPayment ? "Đang xử lý..." : "Xác nhận"}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Call Staff Modal */}
+      <CallStaffModal
+        isOpen={showCallStaffModal}
+        onClose={() => setShowCallStaffModal(false)}
+        onSelectOption={handleSelectCallOption}
+        tableInfo={{ tableNumber: tableId?.toString(), section: "" }}
+      />
+
+      {/* Note Modal */}
+      {editingNoteItem && (
+        <NoteModal
+          isOpen={!!editingNoteItem}
+          onClose={() => setEditingNoteItem(null)}
+          onSave={handleSaveNote}
+          onRemove={handleRemoveNote}
+          currentNote={editingNoteItem.currentNote}
+          itemName={editingNoteItem.name}
+        />
       )}
     </div>
   );
 };
-
-// =====================================================
-// SUB COMPONENTS
-// =====================================================
-const ErrorBanner: React.FC<{
-  message: string;
-  onDismiss: () => void;
-}> = ({ message, onDismiss }) => (
-  <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-3">
-    <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-    <div className="flex-1">
-      <p className="text-sm text-red-700 font-medium">{message}</p>
-    </div>
-    <button
-      className="h-6 w-6 -mr-1 hover:bg-red-100 rounded flex items-center justify-center"
-      onClick={onDismiss}
-    >
-      <X className="h-4 w-4 text-red-500" />
-    </button>
-  </div>
-);
-
-const OrderItemCard: React.FC<{
-  name: string;
-  description?: string;
-  price: number;
-  quantity: number;
-  onQuantityChange: (q: number) => void;
-  isNew?: boolean;
-  dbQuantity: number;
-}> = ({
-  name,
-  description,
-  price,
-  quantity,
-  onQuantityChange,
-  isNew,
-  dbQuantity,
-}) => (
-  <div
-    className={`bg-white rounded-lg p-4 transition-all ${
-      isNew ? "border-2 border-blue-500" : "border border-gray-100"
-    }`}
-  >
-    <div className="flex items-start gap-3">
-      <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-        <span className="text-lg">🍽️</span>
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-semibold text-gray-900 text-sm leading-tight">
-            {name}
-          </h3>
-          <button className="p-1 hover:bg-gray-100 rounded">
-            <MoreHorizontal className="h-4 w-4 text-gray-400" />
-          </button>
-        </div>
-
-        {description && (
-          <p className="text-xs text-gray-500 mb-2">{description}</p>
-        )}
-
-        <div className="flex items-center justify-between">
-          <p className="text-base font-bold text-gray-900">
-            {price.toLocaleString()}
-          </p>
-
-          <div className="flex items-center gap-2">
-            <button
-              className="w-7 h-7 rounded border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100 text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => onQuantityChange(quantity - 1)}
-              disabled={quantity <= dbQuantity}
-            >
-              −
-            </button>
-
-            <span className="text-sm font-semibold w-6 text-center text-gray-900">
-              {quantity}
-            </span>
-
-            <button
-              className="w-7 h-7 rounded border border-blue-500 flex items-center justify-center text-blue-500 hover:bg-blue-50 active:bg-blue-100 text-base font-medium"
-              onClick={() => onQuantityChange(quantity + 1)}
-            >
-              +
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
 
 export default LiveOrderPage;
