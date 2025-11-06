@@ -6,75 +6,58 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { BookingResult } from "@/types";
+import { BookingResponse } from "@/types/index";
 import { CheckCircle2, Calendar, Clock, Users, Hash } from "lucide-react";
 
 interface BookingSuccessDialogProps {
   open: boolean;
   onClose: () => void;
-  bookingResult: BookingResult | null;
+  bookingResult: BookingResponse | null;
 }
 
 const BookingSuccessDialog = ({ open, onClose, bookingResult }: BookingSuccessDialogProps) => {
   const formatDisplayDate = () => {
     if (!bookingResult) return "Updating...";
-    
-    if (bookingResult.booking_time) {
+
+    if (bookingResult.bookingTime) {
       try {
-        const date = new Date(bookingResult.booking_time);
+        const date = new Date(bookingResult.bookingTime);
         if (!isNaN(date.getTime())) {
-          return date.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+          return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
           });
         }
       } catch {
-        return bookingResult.booking_time.split('T')[0] || "Updating...";
+        return bookingResult.bookingTime.split('T')[0] || "Updating...";
       }
     }
-    
-    if (bookingResult.originalFormData?.date) {
-      try {
-        const date = new Date(bookingResult.originalFormData.date);
-        if (!isNaN(date.getTime())) {
-          return date.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          });
-        }
-      } catch {
-        return bookingResult.originalFormData.date;
-      }
-    }
-    
+
+
     return "Updating...";
   };
 
   const formatDisplayTime = () => {
     if (!bookingResult) return "Updating...";
-    
-    if (bookingResult.booking_time) {
+
+    if (bookingResult.bookingTime) {
       try {
-        const date = new Date(bookingResult.booking_time);
+        const date = new Date(bookingResult.bookingTime);
         if (!isNaN(date.getTime())) {
-          return date.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
+          return date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
             minute: '2-digit',
-            hour12: true 
+            hour12: true
           });
         }
       } catch {
-        const timePart = bookingResult.booking_time.split('T')[1];
+        const timePart = bookingResult.bookingTime.split('T')[1];
         return timePart ? timePart.substring(0, 5) : "Updating...";
       }
     }
-    
-    if (bookingResult.originalFormData?.time) {
-      return bookingResult.originalFormData.time;
-    }
-    
+
+
     return "Updating...";
   };
 
@@ -91,11 +74,11 @@ const BookingSuccessDialog = ({ open, onClose, bookingResult }: BookingSuccessDi
     }
 
     return {
-      bookingNumber: bookingResult.bookingNumber || bookingResult.id || `BOOK-${Date.now()}`,
-      name: bookingResult.name || bookingResult.originalFormData?.name || "Updating...",
+      bookingNumber: bookingResult.id || bookingResult.id || `BOOK-${Date.now()}`,
+      name: bookingResult.customerName || "Updating...",
       date: formatDisplayDate(),
       time: formatDisplayTime(),
-      guests: bookingResult.guests || bookingResult.originalFormData?.guests || "Updating...",
+      guests: bookingResult.table.filter((t) => t.tableNumber).join(",") || "Updating...",
       status: bookingResult.status || "Processing",
     };
   };
@@ -103,82 +86,82 @@ const BookingSuccessDialog = ({ open, onClose, bookingResult }: BookingSuccessDi
   const displayData = getDisplayData();
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md animate-scale-in">
-        <DialogHeader className="space-y-4">
-          <div className="mx-auto w-16 h-16 bg-success-bg rounded-full flex items-center justify-center animate-scale-in">
-            <CheckCircle2 className="w-10 h-10 text-success" />
-          </div>
-          <DialogTitle className="text-2xl font-bold text-center">
-            Booking Successful!
-          </DialogTitle>
-          <DialogDescription className="text-center text-base">
-            Your table has been reserved successfully. We look forward to serving you!
-          </DialogDescription>
-        </DialogHeader>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md animate-scale-in font-sans">
+          <DialogHeader className="space-y-4">
+            <div
+                className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center animate-scale-in">
+              <CheckCircle2 className="w-10 h-10 text-green-600"/>
+            </div>
+            <DialogTitle className="text-xl font-bold text-center text-gray-900">
+              Booking Successful!
+            </DialogTitle>
+            <DialogDescription className="text-center text-base text-gray-700">
+              Your table has been reserved successfully. We look forward to serving you!
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4 mt-4">
-          <div className="bg-gradient-warm rounded-xl p-6 space-y-4 border border-border/50">
-            <h3 className="font-semibold text-lg mb-3 text-foreground">Booking Details</h3>
-            
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <Hash className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Booking Number</p>
-                  <p className="font-bold text-primary text-lg">{displayData.bookingNumber}</p>
+          <div className="space-y-4 mt-4">
+            <div className="bg-green-50 rounded-xl p-6 space-y-4 border border-gray-200">
+              <h3 className="font-semibold text-lg mb-3 text-gray-800">Booking Details</h3>
+
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Hash className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0"/>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-600">Booking Number</p>
+                    <p className="font-medium text-gray-800">{displayData.bookingNumber}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3">
-                <Users className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Customer Name</p>
-                  <p className="font-semibold">{displayData.name}</p>
+                <div className="flex items-start gap-3">
+                  <Users className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0"/>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-600">Customer Name</p>
+                    <p className="font-medium text-gray-800">{displayData.name}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Date</p>
-                  <p className="font-semibold">{displayData.date}</p>
+                <div className="flex items-start gap-3">
+                  <Calendar className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0"/>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-600">Date</p>
+                    <p className="font-medium text-gray-800">{displayData.date}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Time</p>
-                  <p className="font-semibold">{displayData.time}</p>
+                <div className="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0"/>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-600">Time</p>
+                    <p className="font-medium text-gray-800">{displayData.time}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-start gap-3">
-                <Users className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">Guests</p>
-                  <p className="font-semibold">{displayData.guests}</p>
+                <div className="flex items-start gap-3">
+                  <Users className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0"/>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-600">Guests</p>
+                    <p className="font-medium text-gray-800">{displayData.guests}</p>
+                  </div>
                 </div>
-              </div>
 
-              <div className="pt-3 border-t border-border/50">
-                <p className="text-sm text-muted-foreground">Status</p>
-                <p className="font-bold text-success text-lg">{displayData.status}</p>
+                <div className="pt-3 border-t border-gray-200">
+                  <p className="text-sm text-gray-600">Status</p>
+                  <p className="font-bold text-green-600">{displayData.status}</p>
+                </div>
               </div>
             </div>
+
+            <Button
+                onClick={onClose}
+                className="w-full h-12 text-base font-medium text-gray-900 bg-green-100 hover:bg-green-200"
+            >
+              Got it!
+            </Button>
           </div>
-
-          <Button 
-            onClick={onClose} 
-            className="w-full h-12 text-base font-bold"
-          >
-            Got it!
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
   );
-};
-
-export default BookingSuccessDialog;
+}
+  export default BookingSuccessDialog;

@@ -81,21 +81,8 @@ export interface FloorElement {
     floor: string;
     tableId?: number;
 }
-export interface Table {
-    id: string;
-    name: string;
-    capacity: number;
-    type: 'square' | 'circle';
-    position: { x: number; y: number };
-    isAvailable?: boolean;
 
-}
 
-export interface Floor {
-  id: number;
-  name: string;
-  tables: FloorPlanTable[];
-}
 export interface BookingRequest {
     tableIds: number[]; // Danh sách ID bàn
     customerName: string;
@@ -203,3 +190,15 @@ export interface OrderResponse {
   updatedAt: string;
 }
 
+export interface Table {
+    id: number;
+    tableNumber: string;
+    capacity: number;
+    locationId: number;
+    section: string;
+    status: "available" | "occupied" | "reserved" | "maintenance" | string;
+    createdAt: string;
+    updatedAt: string;
+    deleted: boolean;
+    activated: boolean;
+}
