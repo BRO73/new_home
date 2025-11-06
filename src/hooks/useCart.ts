@@ -8,6 +8,7 @@ export interface CartItem {
   quantity: number;
   imageUrl: string;
   description: string;
+  note?: string; // Thêm trường note
 }
 
 const CART_STORAGE_KEY = 'cart';
@@ -44,18 +45,23 @@ export const useCart = () => {
     setCartVersion(prev => prev + 1);
   }, [cartItems, isInitialized]);
 
-  const addToCart = (item: Omit<CartItem, 'quantity'>, quantity: number = 1) => {
+  // Cập nhật hàm addToCart để hỗ trợ note
+  const addToCart = (item: Omit<CartItem, 'quantity'>, quantity: number = 1, note?: string) => {
     setCartItems(prevItems => {
       const existingItem = prevItems.find(cartItem => cartItem.id === item.id);
       
       if (existingItem) {
         return prevItems.map(cartItem =>
           cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + quantity }
+            ? { 
+                ...cartItem, 
+                quantity: cartItem.quantity + quantity,
+                note: note !== undefined ? note : cartItem.note // Cập nhật note nếu được cung cấp
+              }
             : cartItem
         );
       } else {
-        return [...prevItems, { ...item, quantity }];
+        return [...prevItems, { ...item, quantity, note }];
       }
     });
   };
@@ -110,6 +116,6 @@ export const useCart = () => {
     showOrderSuccess,
     handleCheckout,
     closeOrderSuccess,
-    cartVersion, // Trả về cartVersion để component có thể subscribe
+    cartVersion,
   };
 };

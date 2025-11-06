@@ -15,6 +15,8 @@ import LiveOrderPage from "./pages/LiveOrderPage";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
+import ThankYouPage from './pages/ThankYouPage';
+import MinigamePage from './pages/MinigamePage';
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -33,7 +35,8 @@ const App = () => (
             </Route>
             <Route path="/qr-scanner" element={<QRScannerPage />} />
             <Route path="/otp-login" element={<FirebaseOTPLogin />} />
-
+            <Route path="/thank-you" element={<ThankYouPage />} />
+            <Route path="/minigame" element={<MinigamePage />} />
             {/* Private routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/menu-order" element={<MenuOrderPage />} />
