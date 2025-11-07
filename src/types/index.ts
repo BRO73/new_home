@@ -202,3 +202,12 @@ export interface Table {
     deleted: boolean;
     activated: boolean;
 }
+export interface ChatbotRequest {
+    message: string;
+    clientId?: string; // optional nếu user chưa login
+}
+
+export interface ChatbotResponse {
+    reply: string;
+}
+
