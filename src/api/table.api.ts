@@ -18,3 +18,12 @@ export const getAllTables = async (): Promise<TableResponse[]> => {
     return data.map(mapToTable);
 };
 
+export const getTableById = async (tableId: number): Promise<TableResponse> => {
+    const response = await api.get<TableResponse>(`/tables/${tableId}`);
+    return mapToTable(response.data);
+};
+
+export  const getTableStatusByDay = async (date: string) => {
+    const {data} = await api.get<TableResponse[]>(`/tables/day/${date}`);
+    return data.map(mapToTable);
+}

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 import {useTables} from "@/hooks/useTables.ts";
+import {format} from "date-fns";
 
 interface BookingFormProps {
   selectedTables?: TableResponse[];
@@ -19,10 +20,7 @@ interface BookingFormProps {
 const BookingForm = ({
                        selectedTables = [],
                        onSelectedTablesChange,
-                     }: {
-  selectedTables?: TableResponse[];
-  onSelectedTablesChange?: (tables: TableResponse[]) => void;
-}) => {
+                     }: BookingFormProps) => {
   const initialTableIds: number[] = selectedTables?.map(t => t.id) || [];
   const initialGuests: number = selectedTables?.reduce((sum, t) => sum + (t.capacity || 0), 0) || 0;
 
@@ -45,7 +43,7 @@ const BookingForm = ({
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null);
 
-  const { tables, loading: tablesLoading, error: tablesError } = useTables(); // <-- hook
+  const { getTableByDay,tables, loading: tablesLoading, error: tablesError } = useTables(); // <-- hook
   const [selectedTableIds, setSelectedTableIds] = useState<number[]>(formData.tableIds);
   useEffect(() => {
     setFormData(prev => ({
@@ -81,6 +79,18 @@ const BookingForm = ({
   const handleToggleTable = (tableId: number) => {
     setSelectedTableIds(prev => prev.includes(tableId) ? prev.filter(id => id !== tableId) : [...prev, tableId]);
   };
+
+  const handleSelectDate = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedDateTime = e.target.value; // ví dụ: "2025-11-06T20:30"
+    const selectedDate = selectedDateTime.split("T")[0]; // 👉 "2025-11-06"
+    const formatted = format(selectedDate, "yyyy-MM-dd");
+    console.log(formatted);
+    updateTables(formatted);
+  };
+
+  async function updateTables(  date : string){
+    await getTableByDay(date);
+  }
 
   const validateForm = (): boolean => {
     const newErrors: Partial<BookingRequest> = {};
@@ -184,7 +194,7 @@ const BookingForm = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date">Date *</Label>
-                <Input id="date" type="date" disabled={isSubmitting} />
+                <Input id="date" type="date" disabled={isSubmitting} onChange={handleSelectDate} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="time">Time *</Label>
