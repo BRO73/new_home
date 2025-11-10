@@ -29,7 +29,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+export const auth = getAuth(app);
 auth.languageCode = "vi";
 
 const FirebaseOtpLogin: React.FC = () => {

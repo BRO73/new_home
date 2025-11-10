@@ -9,7 +9,7 @@ import MenuPage from "./pages/MenuPage";
 import BookingPage from "./pages/BookingPage";
 import Homepage from "./pages/Homepage";
 import QRScannerPage from "./pages/QRScannerPage";
-import MenuOrderPage from "./pages/MenuOrderPage";
+// import MenuOrderPage from "./pages/MenuOrderPage";
 import FirebaseOTPLogin from "./pages/FirebaseOtpLogin";
 import LiveOrderPage from "./pages/LiveOrderPage";
 import Layout from "./components/Layout";
@@ -39,7 +39,6 @@ const App = () => (
             <Route path="/minigame" element={<MinigamePage />} />
             {/* Private routes */}
             <Route element={<ProtectedRoute />}>
-              <Route path="/menu-order" element={<MenuOrderPage />} />
               <Route path="/live-order" element={<LiveOrderPage />} />
               <Route path="/payment-success" element={<PaymentSuccessPage />} />
             </Route>

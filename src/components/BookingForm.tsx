@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import {useState, useEffect, useCallback, useMemo} from "react";
 import { toast } from "sonner";
 import { BookingRequest, BookingResponse, TableResponse } from "@/types";
 import { useBooking } from "@/hooks/useBooking";
@@ -11,6 +11,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 import {useTables} from "@/hooks/useTables.ts";
 import {format} from "date-fns";
+import { debounce } from "lodash";
+import {checkPhoneVerified} from "@/api/customer.api.ts";
+import {FirebaseOtpModal} from "@/components/FirebaseOtpModal.tsx";
 
 interface BookingFormProps {
   selectedTables?: TableResponse[];
@@ -43,8 +46,20 @@ const BookingForm = ({
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null);
 
+
   const { getTableByDay,tables, loading: tablesLoading, error: tablesError } = useTables(); // <-- hook
   const [selectedTableIds, setSelectedTableIds] = useState<number[]>(formData.tableIds);
+
+
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+
+// Khi nhấn "Xác thực ngay"
+  const handleVerifyPhoneClick = () => setShowOtpModal(true);
+
+// Sau khi OTP thành công
+
+
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -58,7 +73,43 @@ const BookingForm = ({
       onSelectedTablesChange(tables.filter(t => selectedTableIds.includes(t.id)));
     }
   }, [selectedTableIds, tables]);
+  const debouncedCheckPhone = useMemo(
+      () =>
+          debounce(async (phone: string) => {
+            if (!phone) return;
 
+            try {
+              const verified = await checkPhoneVerified(phone);
+              setPhoneVerified(verified); // backend trả true/false thì set trực tiếp
+            } catch (err) {
+              setPhoneVerified(false);
+            }
+          }, 2000),
+      []
+  );
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const phone = e.target.value;
+    setFormData(prev => ({ ...prev, customerPhone: phone }));
+
+    // Khi nhập mới, tạm set undefined hoặc false để UI hiển thị "chưa xác thực"
+    setPhoneVerified(undefined);
+
+    // Gọi debounce kiểm tra số mới
+    debouncedCheckPhone(phone);
+  };
+
+// Cleanup khi unmount component
+  useEffect(() => {
+    return () => {
+      debouncedCheckPhone.cancel();
+    };
+  }, [debouncedCheckPhone]);
+
+  const handleOtpSuccess = () => {
+    setPhoneVerified(true); // cập nhật trạng thái số điện thoại đã xác thực
+    setShowOtpModal(false);
+  };
 
 
   // Đồng bộ tableIds và tính numGuests tự động
@@ -141,7 +192,7 @@ const BookingForm = ({
       setSuccessDialogOpen(true);
       // reset form
       setFormData({
-        tableIds: [],
+        tableIds: selectedTables.map(t => t.id),
         customerName: "",
         customerPhone: "",
         customerEmail: "",
@@ -177,11 +228,48 @@ const BookingForm = ({
             </div>
 
             {/* Phone */}
+            {/* Phone */}
             <div className="space-y-2">
               <Label htmlFor="customerPhone">Phone *</Label>
-              <Input id="customerPhone" value={formData.customerPhone} onChange={handleChange("customerPhone")} disabled={isSubmitting} />
-              {errors.customerPhone && <p className="text-sm text-destructive">{errors.customerPhone}</p>}
+
+              {/* Hiển thị thông báo chỉ khi có số điện thoại */}
+              {formData.customerPhone && (
+                  <>
+                    {phoneVerified === true && (
+                        <p className="text-green-600">Số điện thoại đã được xác thực</p>
+                    )}
+                    {phoneVerified === false && (
+                        <p className="text-red-600">
+                          Số điện thoại chưa được xác thực.{" "}
+                          <span
+                              onClick={() => setShowOtpModal(true)}
+                              className="text-blue-600 underline cursor-pointer"
+                          >
+            Xác thực ngay
+          </span>
+                        </p>
+                    )}
+                  </>
+              )}
+
+              <Input
+                  id="customerPhone"
+                  value={formData.customerPhone}
+                  onChange={handlePhoneChange}
+                  disabled={isSubmitting}
+              />
+
+              {errors.customerPhone && (
+                  <p className="text-sm text-destructive">{errors.customerPhone}</p>
+              )}
             </div>
+            {showOtpModal && (
+                <FirebaseOtpModal
+                    phone={formData.customerPhone}
+                    onSuccess={handleOtpSuccess}
+                    onClose={() => setShowOtpModal(false)}
+                />
+            )}
 
             {/* Email */}
             <div className="space-y-2">
