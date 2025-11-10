@@ -210,4 +210,10 @@ export interface ChatbotRequest {
 export interface ChatbotResponse {
     reply: string;
 }
+export interface CustomerResponse {
+    userId: number;
+    fullName: string;
+    phoneNumber: string;
+    email: string;
+}
 
