@@ -54,3 +54,9 @@ export const searchMenuItemsByName = async (name: string): Promise<MenuItem[]> =
     const { data } = await api.get<MenuItemResponse[]>("/menu-items/search", { params: { name } });
     return data.map(mapToMenuItem);
 };
+
+
+export const getTop4MostOrderedMenuItems = async (): Promise<MenuItem[]> => {
+    const { data } = await api.get<MenuItemResponse[]>("/menu-items/top4");
+    return data.map(mapToMenuItem);
+  };

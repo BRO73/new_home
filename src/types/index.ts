@@ -217,3 +217,28 @@ export interface CustomerResponse {
     email: string;
 }
 
+export interface ReviewResponse {
+  id: number;
+  ratingScore: number;
+  comment: string;
+  createdAt: string;   
+  updatedAt: string;   
+  deleted: boolean;
+  activated: boolean;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+}
+
+export interface Review {
+  id: number;
+  ratingScore: number;
+  comment: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deleted: boolean;
+  activated: boolean;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+}
