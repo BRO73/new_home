@@ -17,6 +17,8 @@ export const fetchMenu = async (): Promise<MenuItem[]> => {
   return data.map(mapToMenuItem);
 };
 
+
+
 export const getAllCategories = async (): Promise<string[]> => {
   const { data } = await api.get<any[]>('/categories');
   return data.map(category => category.name).filter(Boolean);
