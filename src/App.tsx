@@ -9,7 +9,7 @@ import MenuPage from "./pages/MenuPage";
 import BookingPage from "./pages/BookingPage";
 import Homepage from "./pages/Homepage";
 import QRScannerPage from "./pages/QRScannerPage";
-// import MenuOrderPage from "./pages/MenuOrderPage";
+import FeedBack from "./pages/FeedBack";
 import FirebaseOTPLogin from "./pages/FirebaseOtpLogin";
 import LiveOrderPage from "./pages/LiveOrderPage";
 import Layout from "./components/Layout";
@@ -37,6 +37,7 @@ const App = () => (
             <Route path="/otp-login" element={<FirebaseOTPLogin />} />
             <Route path="/thank-you" element={<ThankYouPage />} />
             <Route path="/minigame" element={<MinigamePage />} />
+            <Route path="/feedback" element={<FeedBack />} />
             {/* Private routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/live-order" element={<LiveOrderPage />} />
