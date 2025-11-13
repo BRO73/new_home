@@ -211,7 +211,7 @@ export interface ChatbotResponse {
     reply: string;
 }
 export interface CustomerResponse {
-    userId: number;
+    id: number;
     fullName: string;
     phoneNumber: string;
     email: string;
@@ -241,4 +241,11 @@ export interface Review {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+}
+
+
+export interface ReviewRequest {
+  customerId: number;
+  ratingScore: number;
+  comment: string;
 }
