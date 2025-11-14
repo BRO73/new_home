@@ -217,3 +217,10 @@ export interface CustomerResponse {
     email: string;
 }
 
+export interface CustomerResponse {
+    userId: number;
+    fullName: string;
+    phoneNumber: string;
+    email: string;
+}
+

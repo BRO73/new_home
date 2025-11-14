@@ -18,21 +18,24 @@ export const FloorViewer = ({
                             }: FloorViewerProps) => {
     const [selectedTables, setSelectedTables] = useState<TableResponse[]>([]);
 
-// gọi callback khi selectedTables thay đổi
     useEffect(() => {
-        if (onSelectTables) onSelectTables(selectedTables);
-    }, [selectedTables, onSelectTables]);
+        onSelectTables?.(selectedTables);
+    }, [selectedTables]);
+
 
     const handleClickTable = (table: TableResponse | null) => {
-        if (!table) return; // ignore nếu table null
+        if (!table) return;
 
         setSelectedTables(prev => {
             const exists = prev.find(t => t.id === table.id);
+            let newSelection;
             if (exists) {
-                return prev.filter(t => t.id !== table.id);
+                newSelection = prev.filter(t => t.id !== table.id);
             } else {
-                return [...prev, table];
+                newSelection = [...prev, table];
             }
+            onSelectTables?.(newSelection); // call callback **ngay trong handleClick**
+            return newSelection;
         });
     };
 
@@ -75,7 +78,13 @@ export const FloorViewer = ({
         const { x, y, width, height, color, type } = element;
         const table = getTableByElement(element);
         const isSelected = table ? selectedTables.some(t => t.id === table.id) : false;
-        const gradientFill = (color ? `url(#grad-${element.id})` : '#999');
+
+        // kiểm tra trạng thái
+        const isDisabled = table && table.status.toString().toLowerCase() !== 'available';
+        const fillColor = isDisabled ? '#ccc' : (color ? `url(#grad-${element.id})` : '#999');
+        const strokeColor = isDisabled ? '#888' : isSelected ? '#fff' : '#333';
+        const strokeWidth = isSelected ? 4 : 2;
+        const cursorStyle = isDisabled ? 'not-allowed' : 'pointer';
 
         switch (type) {
             case 'table':
@@ -95,15 +104,15 @@ export const FloorViewer = ({
                             y={y - height / 2}
                             width={width}
                             height={height}
-                            fill={gradientFill}
-                            stroke={isSelected ? '#fff' : '#333'} // viền trắng khi chọn
-                            strokeWidth={isSelected ? 4 : 2}
+                            fill={fillColor}
+                            stroke={strokeColor}
+                            strokeWidth={strokeWidth}
                             rx={6}
                             opacity={0.9}
-                            style={{ cursor: 'pointer' }}
+                            style={{ cursor: cursorStyle }}
                             onClick={(e) => {
-                                e.stopPropagation(); // ngăn event bubbling
-                                if (table) handleClickTable(table);
+                                e.stopPropagation();
+                                if (!isDisabled && table) handleClickTable(table);
                             }}
                         />
                         <text
@@ -113,7 +122,7 @@ export const FloorViewer = ({
                             dominantBaseline="middle"
                             fontSize="16"
                             fontWeight="bold"
-                            fill="white"
+                            fill={isDisabled ? '#555' : 'white'}
                             stroke="#000"
                             strokeWidth={0.5}
                             pointerEvents="none"
