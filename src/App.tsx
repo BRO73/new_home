@@ -9,14 +9,14 @@ import MenuPage from "./pages/MenuPage";
 import BookingPage from "./pages/BookingPage";
 import Homepage from "./pages/Homepage";
 import QRScannerPage from "./pages/QRScannerPage";
-// import MenuOrderPage from "./pages/MenuOrderPage";
+import MenuOrderPage from "./pages/MenuOrderPage";
 import FirebaseOTPLogin from "./pages/FirebaseOtpLogin";
 import LiveOrderPage from "./pages/LiveOrderPage";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
-import ThankYouPage from './pages/ThankYouPage';
-import MinigamePage from './pages/MinigamePage';
+import ThankYouPage from "./pages/ThankYouPage";
+import MinigamePage from "./pages/MinigamePage";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -40,6 +40,7 @@ const App = () => (
             {/* Private routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/live-order" element={<LiveOrderPage />} />
+              <Route path="/menu-order" element={<MenuOrderPage />} />
               <Route path="/payment-success" element={<PaymentSuccessPage />} />
             </Route>
 
