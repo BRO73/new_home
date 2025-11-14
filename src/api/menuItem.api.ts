@@ -38,8 +38,8 @@ export const deleteMenuItem = async (id: number): Promise<void> => {
     await api.delete(`/menu-items/${id}`);
 };
 
-export const getMenuItemsByCategory = async (categoryName: string): Promise<MenuItem[]> => {
-    const { data } = await api.get<MenuItemResponse[]>(`/menu-items/category/${categoryName}`);
+export const getMenuItemsByCategory = async (categoryId: number): Promise<MenuItem[]> => {
+    const { data } = await api.get<MenuItemResponse[]>(`/menu-items/category/${categoryId}`);
     return data.map(mapToMenuItem);
 };
 
@@ -54,3 +54,9 @@ export const searchMenuItemsByName = async (name: string): Promise<MenuItem[]> =
     const { data } = await api.get<MenuItemResponse[]>("/menu-items/search", { params: { name } });
     return data.map(mapToMenuItem);
 };
+
+
+export const getTop4MostOrderedMenuItems = async (): Promise<MenuItem[]> => {
+    const { data } = await api.get<MenuItemResponse[]>("/menu-items/top4");
+    return data.map(mapToMenuItem);
+  };

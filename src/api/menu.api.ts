@@ -1,5 +1,5 @@
 import api from "@/api/axiosInstance";
-import { MenuItem, MenuItemResponse, PageResponse } from "@/types";
+import { CategoryResponse, MenuItem, MenuItemResponse, PageResponse } from "@/types";
 
 const mapToMenuItem = (res: MenuItemResponse): MenuItem => ({
   id: res.id,
@@ -17,21 +17,25 @@ export const fetchMenu = async (): Promise<MenuItem[]> => {
   return data.map(mapToMenuItem);
 };
 
-export const getAllCategories = async (): Promise<string[]> => {
-  const { data } = await api.get<any[]>('/categories');
-  return data.map(category => category.name).filter(Boolean);
-};
 
+
+export const getAllCategories = async (): Promise<CategoryResponse[]> => {
+  const { data } = await api.get<any[]>('/categories');
+  return data.map(category => ({
+    id: category.id,
+    name: category.name
+  })).filter(category => category.id != null && category.name != null);
+};
 export const getMenuItemsPaged = async (
   page: number = 0,
   size: number = 5
 ): Promise<PageResponse<MenuItem>> => {
   const { data } = await api.get<PageResponse<MenuItemResponse>>(
-      `/menu-items/paged?page=${page}&size=${size}`
+    `/menu-items/paged?page=${page}&size=${size}`
   );
 
   return {
-      ...data,
-      content: data.content.map(mapToMenuItem),
+    ...data,
+    content: data.content.map(mapToMenuItem),
   };
 };

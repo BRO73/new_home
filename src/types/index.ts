@@ -69,77 +69,71 @@ export interface PageResponse<T> {
 }
 
 export interface FloorElement {
-    id: number;
-    type: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    rotation: number;
-    color?: string;
-    label?: string;
-    floor: string;
-    tableId?: number;
+  id: number;
+  type: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  color?: string;
+  label?: string;
+  floor: string;
+  tableId?: number;
 }
-
 
 export interface BookingRequest {
-    tableIds: number[]; // Danh sách ID bàn
-    customerName: string;
-    customerPhone: string;
-    customerEmail: string;
-    numGuests: number;
-    status?: string; // Có thể bỏ trống, mặc định Pending
-    notes?: string;
-    staffId?: number;
-    bookingTime: string; // ISO format: 'yyyy-MM-ddTHH:mm:ss'
+  tableIds: number[]; // Danh sách ID bàn
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  numGuests: number;
+  status?: string; // Có thể bỏ trống, mặc định Pending
+  notes?: string;
+  staffId?: number;
+  bookingTime: string; // ISO format: 'yyyy-MM-ddTHH:mm:ss'
 }
-
 
 export interface TableSimpleResponse {
-    id: number;
-    tableNumber: string;
-    capacity: number;
-    status: string;
+  id: number;
+  tableNumber: string;
+  capacity: number;
+  status: string;
 }
-
 
 export interface CustomerSimpleResponse {
-    id: number;
-    username: string;
+  id: number;
+  username: string;
 }
 
-
-
 export interface BookingResponse {
-    id: number;
-    customerName: string;
-    customerPhone: string;
-    customerEmail: string;
-    bookingTime: string; // ISO 8601 format, e.g. '2025-11-04T17:30:00'
-    numGuests: number;
-    notes: string;
-    status: string;
-    table: TableSimpleResponse[];
-    customer: CustomerSimpleResponse;
-    createdAt: string;
-    updatedAt: string;
+  id: number;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  bookingTime: string; // ISO 8601 format, e.g. '2025-11-04T17:30:00'
+  numGuests: number;
+  notes: string;
+  status: string;
+  table: TableSimpleResponse[];
+  customer: CustomerSimpleResponse;
+  createdAt: string;
+  updatedAt: string;
 }
 // Location
 export interface LocationResponse {
-    id: number;
-    name: string;
-    description?: string;
+  id: number;
+  name: string;
+  description?: string;
 }
 export interface TableResponse {
-    id: number;
-    tableNumber: string;
-    capacity: number;
-    locationId: number;
-    locationName: string;
-    status: "Available" | "Occupied" | "Reserved" | "Maintenance";
+  id: number;
+  tableNumber: string;
+  capacity: number;
+  locationId: number;
+  locationName: string;
+  status: "Available" | "Occupied" | "Reserved" | "Maintenance";
 }
-
 
 export interface StaffResponse {
   id: number;
@@ -191,36 +185,69 @@ export interface OrderResponse {
 }
 
 export interface Table {
-    id: number;
-    tableNumber: string;
-    capacity: number;
-    locationId: number;
-    section: string;
-    status: "available" | "occupied" | "reserved" | "maintenance" | string;
-    createdAt: string;
-    updatedAt: string;
-    deleted: boolean;
-    activated: boolean;
+  id: number;
+  tableNumber: string;
+  capacity: number;
+  locationId: number;
+  section: string;
+  status: "available" | "occupied" | "reserved" | "maintenance" | string;
+  createdAt: string;
+  updatedAt: string;
+  deleted: boolean;
+  activated: boolean;
 }
+
 export interface ChatbotRequest {
-    message: string;
-    clientId?: string; // optional nếu user chưa login
+  message: string;
+  clientId?: string; // optional nếu user chưa login
 }
 
 export interface ChatbotResponse {
-    reply: string;
+  reply: string;
 }
 export interface CustomerResponse {
-    userId: number;
+    id: number;
     fullName: string;
     phoneNumber: string;
     email: string;
 }
 
-export interface CustomerResponse {
-    userId: number;
-    fullName: string;
-    phoneNumber: string;
-    email: string;
+export interface CustomerRequest {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface ReviewResponse {
+  id: number;
+  ratingScore: number;
+  comment: string;
+  createdAt: string;   
+  updatedAt: string;   
+  deleted: boolean;
+  activated: boolean;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+}
+
+export interface Review {
+  id: number;
+  ratingScore: number;
+  comment: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deleted: boolean;
+  activated: boolean;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+}
+
+
+export interface ReviewRequest {
+  customerId: number;
+  ratingScore: number;
+  comment: string;
 }
 

@@ -1,9 +1,9 @@
 import React, { FC } from "react";
-import { Table } from "@/types/index";
+import { Table, TableResponse } from "@/types/index";
 import { ChevronLeft } from "lucide-react";
 
 interface MenuHeaderProps {
-  tableInfo: Table | null;
+  tableInfo: TableResponse | null;
   cartItemCount: number;
   onBackToLiveOrder: () => void;
   searchTerm: string;
@@ -45,15 +45,15 @@ export const MenuHeader: FC<MenuHeaderProps> = ({
               <div className="text-xs font-bold text-gray-900 truncate">
                 Bàn {tableInfo?.tableNumber || "N/A"}
               </div>
-              <div className="text-xs text-gray-500 truncate">
+              {/* <div className="text-xs text-gray-500 truncate">
                 {tableInfo?.section || "..."}
-              </div>
+              </div> */}
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Đã xoá nút Gọi NV */}
-            
+
             {cartItemCount > 0 && (
               <button
                 onClick={onBackToLiveOrder}
