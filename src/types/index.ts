@@ -217,6 +217,12 @@ export interface CustomerResponse {
     email: string;
 }
 
+export interface CustomerRequest {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+}
+
 export interface ReviewResponse {
   id: number;
   ratingScore: number;

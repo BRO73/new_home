@@ -18,6 +18,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import ThankYouPage from "./pages/ThankYouPage";
 import MinigamePage from "./pages/MinigamePage";
+import History from "./pages/History";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/menu" element={<MenuPage />} />
               <Route path="/booking" element={<BookingPage />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/history" element={<History />} />
             </Route>
             <Route path="/qr-scanner" element={<QRScannerPage />} />
             <Route path="/otp-login" element={<FirebaseOTPLogin />} />
