@@ -206,8 +206,48 @@ export interface ChatbotResponse {
   reply: string;
 }
 export interface CustomerResponse {
-  userId: number;
-  fullName: string;
-  phoneNumber: string;
-  email: string;
+    id: number;
+    fullName: string;
+    phoneNumber: string;
+    email: string;
 }
+
+export interface CustomerRequest {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface ReviewResponse {
+  id: number;
+  ratingScore: number;
+  comment: string;
+  createdAt: string;   
+  updatedAt: string;   
+  deleted: boolean;
+  activated: boolean;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+}
+
+export interface Review {
+  id: number;
+  ratingScore: number;
+  comment: string;
+  createdAt: Date;
+  updatedAt: Date;
+  deleted: boolean;
+  activated: boolean;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+}
+
+
+export interface ReviewRequest {
+  customerId: number;
+  ratingScore: number;
+  comment: string;
+}
+

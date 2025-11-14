@@ -1,6 +1,6 @@
 // api/menuItemApi.ts
 import api from "@/api/axiosInstance";
-import { MenuItemResponse, MenuItemFormData, MenuItem } from "@/types/type";
+import { MenuItemResponse, MenuItemFormData, MenuItem } from "@/types/index";
 
 // Mapper: API → UI
 const mapToMenuItem = (res: MenuItemResponse): MenuItem => ({
