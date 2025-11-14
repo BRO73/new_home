@@ -5,7 +5,7 @@ import { Mail, Phone, Save, X, CheckCircle } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { CustomerResponse, CustomerRequest } from '@/types';
-import { getCustomerByPhoneNumber, updateCustomer } from '@/api/customer.api';
+import {getCustomerByPhone, getCustomerByPhoneNumber, updateCustomer} from '@/api/customer.api';
 
 const Profile = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -36,11 +36,13 @@ const Profile = () => {
       try {
         const userPhone = localStorage.getItem('userPhone');
         if (userPhone) {
-          const customerData = await getCustomerByPhoneNumber(userPhone);
+          const customerData = await getCustomerByPhone(userPhone);
           setCustomer(customerData);
+          localStorage.setItem("customerId", customerData.id.toString());
           
           // Lưu customer vào localStorage để Header có thể sử dụng
           localStorage.setItem(`customer_${userPhone}`, JSON.stringify(customerData));
+
           
           // Tách fullName thành firstName và lastName
           const nameParts = customerData.fullName.split(' ');

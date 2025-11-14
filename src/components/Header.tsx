@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getCustomerByPhoneNumber } from '@/api/customer.api';
+import {getCustomerByPhone, getCustomerByPhoneNumber} from '@/api/customer.api';
 
 const Header = () => {
   const navigate = useNavigate();
@@ -34,7 +34,7 @@ const Header = () => {
         setUserPhone(phone);
         
         if (phone) {
-          const customerData = await getCustomerByPhoneNumber(phone);
+          const customerData = await getCustomerByPhone(phone);
           setCustomer(customerData);
           
           // Lưu customer vào localStorage để sử dụng lại

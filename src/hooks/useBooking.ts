@@ -5,7 +5,7 @@ import {
     createBooking,
     updateBooking,
     deleteBooking,
-    formatBookingData,
+    formatBookingData, getBookingsByCustomer,
 } from "@/api/booking.api";
 
 import { BookingRequest, BookingResponse } from "@/types/index.ts";
@@ -116,6 +116,24 @@ export const useBooking = () => {
             setLoading(false);
         }
     };
+    const fetchBookingsByCustomer = async (customerUserId: number) => {
+        setLoading(true);
+        try {
+            const data = await getBookingsByCustomer(customerUserId);
+            console.log("get booking data", data);
+            setBookings(data);
+        } catch (err: any) {
+            setError(err.message);
+            toast({
+                title: "Error",
+                description: "Failed to load customer bookings.",
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     return {
         bookings,
@@ -125,5 +143,6 @@ export const useBooking = () => {
         addBooking,
         editBooking,
         removeBooking,
+        fetchBookingsByCustomer
     };
 };
