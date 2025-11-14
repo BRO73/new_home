@@ -1,4 +1,4 @@
-import { useState,useEffect } from 'react';
+import { useState,useEffect, useCallback } from 'react';
 import { Box, Container, Typography } from '@mui/material';
 import BookingForm from '@/components/BookingForm';
 import { FloorViewer } from '@/components/FloorViewer';
@@ -11,7 +11,7 @@ import {useBooking} from '@/hooks/useBooking';
 import ChatBot from '@/components/ChatBot';
 
 const BookingPage = () => {
-  const [currentTables, setCurrentTables] = useState<TableResponse []| null>(null);
+  const [currentTables, setCurrentTables] = useState<TableResponse[]>([]);
   const { locations } = useLocations();
   const { data: elements = [] } = useFloorElements();
   const [selectedFloor, setSelectedFloor] = useState<string>('');
@@ -24,10 +24,9 @@ const BookingPage = () => {
     }
   }, [locations, selectedFloor]);
 
-  // Lọc elements theo floor được chọn
-  const currentFloorElements = elements.filter(
-      (el) => el.floor === selectedFloor
-  );
+  const handleSelectTables = useCallback((selectedTables: TableResponse[]) => {
+    setCurrentTables(selectedTables);
+  }, []);
 
   if (loading) {
     return (
@@ -77,13 +76,14 @@ const BookingPage = () => {
                 {locations.map((location) => (
                     <TabsContent key={location.id} value={location.name} className="mt-6">
 
+                      ...
                       <FloorViewer
-
                           tables={tables}
                           floor={location.name}
-                          elements={currentFloorElements}
-                          onSelectTables={(selectedTables) => setCurrentTables(selectedTables)}
+                          elements={elements.filter(el => el.floor === location.name)}
+                          onSelectTables={handleSelectTables}
                       />
+
                     </TabsContent>
                 ))}
               </Tabs>
@@ -95,8 +95,8 @@ const BookingPage = () => {
                 Reservation Details
               </Typography>
               <BookingForm
-                  selectedTables={currentTables} // bàn đã chọn (có thể [] ban đầu)
-                  onSelectedTablesChange={(tables) => setCurrentTables(currentTables)} // update state khi user chọn/hủy table
+                  selectedTables={currentTables}
+                  onSelectedTablesChange={(tables) => setCurrentTables(tables)}
               />
             </Box>
           </Container>

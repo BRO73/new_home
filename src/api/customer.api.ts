@@ -6,6 +6,12 @@ export const checkPhoneVerified = async (phoneNumber: string): Promise<boolean> 
     });
     return response.data;
 };
+export const getCustomerByPhone = async (phone: string): Promise<CustomerResponse | null> => {
+    const { data } = await api.get<CustomerResponse | null>("/customers/by-phone", {
+        params: { phone }
+    });
+    return data; // null nếu không tìm thấy
+};
 
 export const getCustomerByPhoneNumber = async (phoneNumber: string): Promise<CustomerResponse> => {
     const response = await api.get<CustomerResponse>(`/customers/phone/${phoneNumber}`);
