@@ -4,8 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import StarRating from "@/components/StarRating";
 import { toast } from "sonner";
 import { MessageSquareHeart, Send, Sparkles } from "lucide-react";
-import {  createReview } from "@/api/review.api"; // Adjust import path
-import { getCustomerByPhoneNumber } from "@/api/customer.api"; // Adjust import path
+import {  createReview } from "@/api/review.api"; 
+import { getCustomerByPhoneNumber } from "@/api/customer.api"; 
 
 const FeedBack = () => {
   const [rating, setRating] = useState(0);

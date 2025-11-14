@@ -40,7 +40,7 @@ const MenuPage = () => {
         setTotalPages(response.totalPages);
         setTotalItems(response.totalElements);
 
-        // Lưu toàn bộ menu items vào localStorage để search
+        // Lưu toàn bộ menu items vào localStorage để search và filter
         const existingItems = JSON.parse(localStorage.getItem('allMenuItems') || '[]');
         const newItems = response.content.filter(newItem => 
           !existingItems.some((existingItem: MenuItem) => existingItem.id === newItem.id)
@@ -79,27 +79,28 @@ const MenuPage = () => {
     fetchCategories();
   }, []);
 
-  // Filter items based on search and category
+  // Filter items based on search and category - FIXED
   const filteredItems = useMemo(() => {
-    let itemsToFilter = menuItems;
+    // Luôn sử dụng dữ liệu từ localStorage để filter category
+    const allItemsFromStorage = JSON.parse(localStorage.getItem('allMenuItems') || '[]');
+    let itemsToFilter = allItemsFromStorage;
 
-    // Nếu có search query, lấy từ localStorage thay vì chỉ trang hiện tại
-    if (searchQuery.trim()) {
-      const allItemsFromStorage = JSON.parse(localStorage.getItem('allMenuItems') || '[]');
-      itemsToFilter = allItemsFromStorage;
+    if (!itemsToFilter || itemsToFilter.length === 0) {
+      return [];
     }
-
-    if (!itemsToFilter) return [];
 
     return itemsToFilter.filter((item: MenuItem) => {
       const matchesSearch =
+        searchQuery.trim() === "" ||
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
       const matchesCategory =
         selectedCategory === "All" || item.category === selectedCategory;
+      
       return matchesSearch && matchesCategory;
     });
-  }, [menuItems, searchQuery, selectedCategory]);
+  }, [menuItems, searchQuery, selectedCategory]); // Thêm menuItems vào dependency để cập nhật khi có dữ liệu mới
 
   // Reset to page 1 when search or category changes
   useEffect(() => {
@@ -107,35 +108,37 @@ const MenuPage = () => {
     setCurrentSearchPage(1);
   }, [searchQuery, selectedCategory]);
 
-  // Tính toán phân trang cho search results
-  const searchTotalPages = Math.ceil(filteredItems.length / itemsPerPage);
-  const searchStartIndex = (currentSearchPage - 1) * itemsPerPage;
-  const searchEndIndex = searchStartIndex + itemsPerPage;
-  const paginatedSearchItems = filteredItems.slice(searchStartIndex, searchEndIndex);
+  // Tính toán phân trang cho search và filter results
+  const filterTotalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const filterStartIndex = (currentSearchPage - 1) * itemsPerPage;
+  const filterEndIndex = filterStartIndex + itemsPerPage;
+  const paginatedFilterItems = filteredItems.slice(filterStartIndex, filterEndIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSearchPageChange = (page: number) => {
+  const handleFilterPageChange = (page: number) => {
     setCurrentSearchPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Items để hiển thị
+  // Items để hiển thị - UPDATED
   const itemsToDisplay = useMemo(() => {
-    if (searchQuery) {
-      return paginatedSearchItems;
+    // Nếu có search query hoặc category được chọn, hiển thị kết quả đã filter
+    if (searchQuery.trim() || selectedCategory !== "All") {
+      return paginatedFilterItems;
     } else {
+      // Ngược lại, hiển thị menu items phân trang thông thường
       return menuItems;
     }
-  }, [searchQuery, paginatedSearchItems, menuItems]);
+  }, [searchQuery, selectedCategory, paginatedFilterItems, menuItems]);
 
-  // Tính toán số item đang hiển thị chính xác
+  // Tính toán số item đang hiển thị chính xác - UPDATED
   const getDisplayedItemsCount = () => {
-    if (searchQuery) {
-      return paginatedSearchItems.length;
+    if (searchQuery.trim() || selectedCategory !== "All") {
+      return paginatedFilterItems.length;
     } else {
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
@@ -143,14 +146,17 @@ const MenuPage = () => {
     }
   };
 
-  // Tính toán tổng số items
+  // Tính toán tổng số items - UPDATED
   const getTotalItemsCount = () => {
-    if (searchQuery) {
+    if (searchQuery.trim() || selectedCategory !== "All") {
       return filteredItems.length;
     } else {
       return totalItems;
     }
   };
+
+  // Kiểm tra xem có đang filter không
+  const isFiltering = searchQuery.trim() || selectedCategory !== "All";
 
   return (
     <div className="py-12 bg-gray-50 min-h-screen mt-10">
@@ -235,8 +241,8 @@ const MenuPage = () => {
               ))}
             </div>
 
-            {/* Pagination cho regular items */}
-            {!searchQuery && (
+            {/* Pagination cho regular items (không filter) */}
+            {!isFiltering && (
               <>
                 <div className="flex justify-center mt-12">
                   <div className="flex gap-2">
@@ -285,25 +291,25 @@ const MenuPage = () => {
               </>
             )}
 
-            {/* Pagination cho search results */}
-            {searchQuery && searchTotalPages > 1 && (
+            {/* Pagination cho filter results (search hoặc category) */}
+            {isFiltering && filterTotalPages > 1 && (
               <>
                 <div className="flex justify-center mt-12">
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      onClick={() => handleSearchPageChange(currentSearchPage - 1)}
+                      onClick={() => handleFilterPageChange(currentSearchPage - 1)}
                       disabled={currentSearchPage === 1}
                       className="border-gray-300 hover:bg-[#d4a574]/10 hover:text-[#d4a574] hover:border-[#d4a574]"
                     >
                       Previous
                     </Button>
                     
-                    {Array.from({ length: searchTotalPages }, (_, i) => i + 1).map((page) => (
+                    {Array.from({ length: filterTotalPages }, (_, i) => i + 1).map((page) => (
                       <Button
                         key={page}
                         variant={currentSearchPage === page ? "default" : "outline"}
-                        onClick={() => handleSearchPageChange(page)}
+                        onClick={() => handleFilterPageChange(page)}
                         className={
                           currentSearchPage === page
                             ? "bg-[#d4a574] hover:bg-[#c9956a] text-white"
@@ -316,8 +322,8 @@ const MenuPage = () => {
 
                     <Button
                       variant="outline"
-                      onClick={() => handleSearchPageChange(currentSearchPage + 1)}
-                      disabled={currentSearchPage === searchTotalPages}
+                      onClick={() => handleFilterPageChange(currentSearchPage + 1)}
+                      disabled={currentSearchPage === filterTotalPages}
                       className="border-gray-300 hover:bg-[#d4a574]/10 hover:text-[#d4a574] hover:border-[#d4a574]"
                     >
                       Next
@@ -325,21 +331,25 @@ const MenuPage = () => {
                   </div>
                 </div>
 
-                {/* Search page info */}
+                {/* Filter page info */}
                 <div className="text-center mt-6">
                   <p className="text-sm text-gray-500">
-                    Page {currentSearchPage} of {searchTotalPages} • Showing{" "}
-                    {getDisplayedItemsCount()} of {getTotalItemsCount()} items matching "{searchQuery}"
+                    Page {currentSearchPage} of {filterTotalPages} • Showing{" "}
+                    {getDisplayedItemsCount()} of {getTotalItemsCount()} items
+                    {searchQuery && ` matching "${searchQuery}"`}
+                    {selectedCategory !== "All" && ` in category "${selectedCategory}"`}
                   </p>
                 </div>
               </>
             )}
 
-            {/* Hiển thị thông tin kết quả search khi chỉ có 1 trang */}
-            {searchQuery && searchTotalPages <= 1 && (
+            {/* Hiển thị thông tin kết quả filter khi chỉ có 1 trang */}
+            {isFiltering && filterTotalPages <= 1 && (
               <div className="text-center mt-6">
                 <p className="text-sm text-gray-500">
-                  Found {filteredItems.length} items matching "{searchQuery}"
+                  Found {filteredItems.length} items
+                  {searchQuery && ` matching "${searchQuery}"`}
+                  {selectedCategory !== "All" && ` in category "${selectedCategory}"`}
                 </p>
               </div>
             )}
