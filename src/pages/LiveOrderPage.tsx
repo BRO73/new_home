@@ -37,7 +37,7 @@ const getStorageKeys = (tableId: number) => ({
 });
 
 // Key for localStorage
-const LOCAL_CARTS_STORAGE_KEY = 'restaurant_local_carts';
+const LOCAL_CARTS_STORAGE_KEY = "restaurant_local_carts";
 
 const LiveOrderPage: React.FC = () => {
   const navigate = useNavigate();
@@ -56,7 +56,8 @@ const LiveOrderPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showError, setShowError] = useState<boolean>(false);
-  const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
+  const [isProcessingPayment, setIsProcessingPayment] =
+    useState<boolean>(false);
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
   const [showCallStaffModal, setShowCallStaffModal] = useState<boolean>(false);
   const [editingNoteItem, setEditingNoteItem] = useState<{
@@ -79,7 +80,7 @@ const LiveOrderPage: React.FC = () => {
         const parsedLocalCarts = JSON.parse(savedLocalCarts);
         setLocalCarts(parsedLocalCarts);
       } catch (error) {
-        console.error('Error loading localCarts from localStorage:', error);
+        console.error("Error loading localCarts from localStorage:", error);
       }
     }
   }, []);
@@ -269,21 +270,50 @@ const LiveOrderPage: React.FC = () => {
     setIsSubmitting(true);
     setError(null);
 
-    const apiItems: OrderDetailRequest[] = itemsToSubmit.map((item) => ({
-      menuItemId: item.menuItemId,
-      quantity: item.quantity,
-      specialRequirements: item.note || "", // Gửi ghi chú lên server
-    }));
-
     try {
-      await addItemsToOrder(activeOrderId, apiItems);
+      // Lấy order hiện tại để merge số lượng
+      const activeOrder = orders.find((o) => o.id === activeOrderId);
+      if (!activeOrder) {
+        throw new Error("Không tìm thấy order hiện tại");
+      }
 
+      // Tạo map để merge số lượng
+      const mergedItems: OrderDetailRequest[] = [];
+      const existingItemsMap = new Map<number, number>();
+
+      // Lấy số lượng hiện tại từ database
+      activeOrder.items.forEach((item) => {
+        existingItemsMap.set(item.menuItem.id, item.quantity);
+      });
+
+      // Merge với items từ local cart
+      for (const localItem of itemsToSubmit) {
+        const existingQty = existingItemsMap.get(localItem.menuItemId) || 0;
+        const totalQty = existingQty + localItem.quantity;
+
+        mergedItems.push({
+          menuItemId: localItem.menuItemId,
+          quantity: totalQty,
+          specialRequirements: localItem.note || "",
+        });
+
+        // Cập nhật map để tránh trùng lặp
+        existingItemsMap.set(localItem.menuItemId, totalQty);
+      }
+
+      // Gửi items đã merged lên server
+      await addItemsToOrder(activeOrderId, mergedItems);
+
+      // Xóa local cart
       setLocalCarts((prev) => ({
         ...prev,
         [activeOrderId]: [],
       }));
 
+      // Load lại orders để cập nhật UI
       await loadOrders(tableId);
+
+      console.log("✅ Đã merge và cập nhật số lượng thành công");
     } catch (err) {
       console.error("Lỗi khi gửi đơn hàng:", err);
       setError("Không thể gửi đơn hàng. Vui lòng thử lại.");
@@ -354,7 +384,11 @@ const LiveOrderPage: React.FC = () => {
   };
 
   // Hàm xử lý mở modal ghi chú
-  const handleEditNote = (menuItemId: number, name: string, currentNote?: string) => {
+  const handleEditNote = (
+    menuItemId: number,
+    name: string,
+    currentNote?: string
+  ) => {
     setEditingNoteItem({ menuItemId, name, currentNote });
   };
 
@@ -366,12 +400,16 @@ const LiveOrderPage: React.FC = () => {
       const newLocalCarts = { ...prevLocalCarts };
       const currentCart = newLocalCarts[activeOrderId] || [];
 
-      const existingItem = currentCart.find(item => item.menuItemId === editingNoteItem.menuItemId);
+      const existingItem = currentCart.find(
+        (item) => item.menuItemId === editingNoteItem.menuItemId
+      );
       if (existingItem) {
         existingItem.note = note;
       } else {
         // Nếu item chưa có trong local cart, tạo mới
-        const displayItem = displayItems.find(item => item.menuItemId === editingNoteItem.menuItemId);
+        const displayItem = displayItems.find(
+          (item) => item.menuItemId === editingNoteItem.menuItemId
+        );
         if (displayItem) {
           currentCart.push({
             menuItemId: editingNoteItem.menuItemId,
@@ -398,7 +436,9 @@ const LiveOrderPage: React.FC = () => {
       const newLocalCarts = { ...prevLocalCarts };
       const currentCart = newLocalCarts[activeOrderId] || [];
 
-      const existingItem = currentCart.find(item => item.menuItemId === editingNoteItem.menuItemId);
+      const existingItem = currentCart.find(
+        (item) => item.menuItemId === editingNoteItem.menuItemId
+      );
       if (existingItem) {
         delete existingItem.note;
       }
@@ -412,11 +452,11 @@ const LiveOrderPage: React.FC = () => {
 
   const displayItems = useMemo(() => {
     if (!activeOrderId) return [];
-
+  
     const activeOrder = orders.find((o) => o.id === activeOrderId);
     const dbItems = activeOrder ? activeOrder.items : [];
     const localItems = localCarts[activeOrderId] || [];
-
+  
     type DisplayItem = {
       menuItemId: number;
       name: string;
@@ -425,21 +465,31 @@ const LiveOrderPage: React.FC = () => {
       localQty: number;
       note?: string;
     };
-
+  
     const itemMap = new Map<number, DisplayItem>();
-
-    // Add DB items
+  
+    // Add DB items - GỘP các item có cùng menuItemId
     for (const item of dbItems) {
-      itemMap.set(item.menuItem.id, {
-        menuItemId: item.menuItem.id,
-        name: item.menuItem.name,
-        price: item.price,
-        dbQty: item.quantity,
-        localQty: 0,
-        note: item.specialRequirements || undefined, // Lấy ghi chú từ DB
-      });
+      const existing = itemMap.get(item.menuItem.id);
+      if (existing) {
+        // Nếu đã tồn tại, cộng dồn số lượng
+        existing.dbQty += item.quantity;
+        // Giữ ghi chú từ item đầu tiên, hoặc bạn có thể xử lý khác tùy nhu cầu
+        if (!existing.note && item.specialRequirements) {
+          existing.note = item.specialRequirements;
+        }
+      } else {
+        itemMap.set(item.menuItem.id, {
+          menuItemId: item.menuItem.id,
+          name: item.menuItem.name,
+          price: item.price,
+          dbQty: item.quantity,
+          localQty: 0,
+          note: item.specialRequirements || undefined,
+        });
+      }
     }
-
+  
     // Add local items
     for (const item of localItems) {
       const existing = itemMap.get(item.menuItemId);
@@ -456,14 +506,13 @@ const LiveOrderPage: React.FC = () => {
           price: item.price,
           dbQty: 0,
           localQty: item.quantity,
-          note: item.note, // Lấy ghi chú từ local cart
+          note: item.note,
         });
       }
     }
-
+  
     return Array.from(itemMap.values());
   }, [activeOrderId, orders, localCarts]);
-
   const handleQuantityChange = (menuItemId: number, totalQuantity: number) => {
     if (!activeOrderId) return;
 
@@ -506,16 +555,13 @@ const LiveOrderPage: React.FC = () => {
 
   const currentLocalCart = localCarts[activeOrderId] || [];
 
-  const newItemsTotal =
-    currentLocalCart.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    ) / 100;
+  const newItemsTotal = currentLocalCart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  ); // Bỏ chia 100
 
   const confirmedTotal = useMemo(() => {
-    return (
-      displayItems.reduce((sum, item) => sum + item.price * item.dbQty, 0) / 100
-    );
+    return displayItems.reduce((sum, item) => sum + item.price * item.dbQty, 0); // Bỏ chia 100
   }, [displayItems]);
 
   const grandTotal = confirmedTotal + newItemsTotal;
@@ -553,7 +599,7 @@ const LiveOrderPage: React.FC = () => {
         <h1 className="text-base font-semibold text-gray-900">
           {loading ? "Đang tải..." : tableName || `Bàn ${tableIdState}`}
         </h1>
-        <button 
+        <button
           className="h-10 w-10 flex items-center justify-center hover:bg-gray-100 rounded-lg"
           onClick={() => setShowCallStaffModal(true)}
         >
@@ -624,7 +670,9 @@ const LiveOrderPage: React.FC = () => {
                 onQuantityChange={(q) =>
                   handleQuantityChange(item.menuItemId, q)
                 }
-                onEditNote={() => handleEditNote(item.menuItemId, item.name, item.note)}
+                onEditNote={() =>
+                  handleEditNote(item.menuItemId, item.name, item.note)
+                }
                 isNew={isNewOnly}
                 dbQuantity={item.dbQty}
                 note={item.note}

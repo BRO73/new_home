@@ -28,6 +28,7 @@ const MenuPage = () => {
   const [showRightScroll, setShowRightScroll] = useState(true);
   const categoriesContainerRef = useRef<HTMLDivElement>(null);
 
+  // Fetch all menu items for search functionality
   useEffect(() => {
     const fetchAllMenuItems = async () => {
       try {
@@ -41,6 +42,7 @@ const MenuPage = () => {
     fetchAllMenuItems();
   }, []);
 
+  // Fetch menu items with pagination or by category
   useEffect(() => {
     const fetchMenuItems = async () => {
       try {
@@ -48,11 +50,13 @@ const MenuPage = () => {
         setError(null);
 
         if (selectedCategoryId !== null) {
+          // Fetch by category - we'll get all items and handle pagination client-side
           const categoryItems = await getMenuItemsByCategory(selectedCategoryId);
           setMenuItems(categoryItems);
           setTotalPages(Math.ceil(categoryItems.length / itemsPerPage));
           setTotalItems(categoryItems.length);
         } else {
+          // Fetch with server-side pagination
           const response: PageResponse<MenuItem> = await getMenuItemsPaged(
             currentPage - 1,
             itemsPerPage
@@ -134,12 +138,15 @@ const MenuPage = () => {
     setCurrentPage(1);
   };
 
+  // Filter items based on search query
   const filteredItems = useMemo(() => {
     let itemsToSearch = [];
 
     if (selectedCategoryId !== null) {
+      // When category is selected, search within the category items
       itemsToSearch = menuItems;
     } else {
+      // When no category is selected, search within all items
       itemsToSearch = allMenuItems;
     }
 
@@ -158,26 +165,41 @@ const MenuPage = () => {
     });
   }, [searchQuery, menuItems, allMenuItems, selectedCategoryId]);
 
+  // Reset to page 1 when search query changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  const searchTotalPages = Math.ceil(filteredItems.length / itemsPerPage);
-  const searchStartIndex = (currentPage - 1) * itemsPerPage;
-  const searchEndIndex = searchStartIndex + itemsPerPage;
-  const paginatedSearchItems = filteredItems.slice(searchStartIndex, searchEndIndex);
-
-  const menuStartIndex = (currentPage - 1) * itemsPerPage;
-  const menuEndIndex = menuStartIndex + itemsPerPage;
-  const paginatedMenuItems = menuItems.slice(menuStartIndex, menuEndIndex);
-
+  // Calculate items to display based on current state
   const itemsToDisplay = useMemo(() => {
-    if (searchQuery.trim()) {
-      return paginatedSearchItems;
+    if (searchQuery.trim() || selectedCategoryId !== null) {
+      // Client-side pagination for search and category filter
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      return filteredItems.slice(startIndex, endIndex);
     } else {
-      return paginatedMenuItems;
+      // Server-side pagination for normal case
+      return menuItems;
     }
-  }, [searchQuery, paginatedSearchItems, paginatedMenuItems]);
+  }, [searchQuery, selectedCategoryId, currentPage, itemsPerPage, filteredItems, menuItems]);
+
+  // Calculate total pages based on current state
+  const getDisplayTotalPages = () => {
+    if (searchQuery.trim() || selectedCategoryId !== null) {
+      return Math.ceil(filteredItems.length / itemsPerPage);
+    } else {
+      return totalPages;
+    }
+  };
+
+  // Calculate total items count based on current state
+  const getTotalItemsCount = () => {
+    if (searchQuery.trim() || selectedCategoryId !== null) {
+      return filteredItems.length;
+    } else {
+      return totalItems;
+    }
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -186,22 +208,6 @@ const MenuPage = () => {
 
   const getDisplayedItemsCount = () => {
     return itemsToDisplay.length;
-  };
-
-  const getTotalItemsCount = () => {
-    if (searchQuery.trim()) {
-      return filteredItems.length;
-    } else {
-      return totalItems;
-    }
-  };
-
-  const getDisplayTotalPages = () => {
-    if (searchQuery.trim()) {
-      return searchTotalPages;
-    } else {
-      return totalPages;
-    }
   };
 
   const isFiltering = searchQuery.trim() || selectedCategory !== "All";
