@@ -89,6 +89,8 @@ export const getBookingsByCustomer = async (customerUserId: number): Promise<Boo
   }
 };
 
+
+
 /**
  * 🧩 Format dữ liệu booking từ form người dùng sang BookingRequest
  */
@@ -130,6 +132,8 @@ export const formatBookingData = (rawData: BookingRequest): BookingRequest => {
     staffId: rawData.staffId || undefined,
   };
 };
+
+
 
 export default {
   createBooking,
