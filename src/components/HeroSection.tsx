@@ -45,8 +45,7 @@ const HeroSection = () => {
             </h1>
 
             <p className="text-muted-foreground text-lg max-w-md">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              Experience delicious meals made with fresh ingredients, crafted to bring you great flavor and comfort every time you dine with us.
             </p>
 
             <div className="flex gap-4">
