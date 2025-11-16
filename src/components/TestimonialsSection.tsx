@@ -37,7 +37,7 @@ const TestimonialsSection = () => {
           <div className="text-center space-y-4 mb-16">
             <h2 className="text-4xl lg:text-5xl font-bold">Our Happy Customers</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+             Hear from our delighted customers who love our service and quality.
             </p>
           </div>
           <div className="max-w-5xl mx-auto px-12">
@@ -85,7 +85,7 @@ const TestimonialsSection = () => {
         <div className="text-center space-y-4 mb-16">
           <h2 className="text-4xl lg:text-5xl font-bold">Our Happy Customers</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+           Hear from our delighted customers who love our service and quality.
           </p>
         </div>
 
