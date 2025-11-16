@@ -30,3 +30,20 @@ export const createPaymentLink = async (
 
   return response.data;
 };
+
+
+
+export const processCashPayment = async (
+  orderId: number,
+  amountReceived?: number
+) => {
+  const payload: any = { orderId };
+
+  // Chỉ gửi amountReceived nếu có giá trị
+  if (amountReceived !== undefined && amountReceived !== null) {
+    payload.amountReceived = amountReceived;
+  }
+
+  const response = await api.post("/payments/cash", payload);
+  return response.data;
+};

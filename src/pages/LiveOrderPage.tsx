@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
-import { createPaymentLink } from "@/api/payment.api";
+import { createPaymentLink, processCashPayment } from "@/api/payment.api";
 import {
   getActiveOrdersByTable,
   createOrder,
@@ -14,12 +14,14 @@ import {
   FileText,
   CreditCard,
 } from "lucide-react";
-import { OrderResponse, OrderDetailRequest } from "@/types/index";
+import { OrderResponse, OrderDetailRequest } from "@/types";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { OrderItemCard } from "@/components/OrderItemCard";
 import { CallStaffModal } from "@/components/CallStaffModal";
-import { PaymentModal } from "@/components/PaymentModal";
 import { NoteModal } from "@/components/NoteModal";
+import { BillPreviewModal } from "@/components/BillPreviewModal";
+import { CashPaymentModal } from "@/components/CashPaymentModal";
+import { PaymentMethodModal } from "@/components/PaymentMethodModal";
 
 type LocalCartItem = {
   menuItemId: number;
@@ -36,7 +38,6 @@ const getStorageKeys = (tableId: number) => ({
   pendingOrder: `pendingOrderId_table_${tableId}`,
 });
 
-// Key for localStorage
 const LOCAL_CARTS_STORAGE_KEY = "restaurant_local_carts";
 
 const LiveOrderPage: React.FC = () => {
@@ -58,7 +59,12 @@ const LiveOrderPage: React.FC = () => {
   const [showError, setShowError] = useState<boolean>(false);
   const [isProcessingPayment, setIsProcessingPayment] =
     useState<boolean>(false);
+
+  // Modal states
+  const [showBillPreview, setShowBillPreview] = useState<boolean>(false);
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
+  const [showCashPaymentModal, setShowCashPaymentModal] =
+    useState<boolean>(false);
   const [showCallStaffModal, setShowCallStaffModal] = useState<boolean>(false);
   const [editingNoteItem, setEditingNoteItem] = useState<{
     menuItemId: number;
@@ -70,9 +76,12 @@ const LiveOrderPage: React.FC = () => {
   const [activeOrderId, setActiveOrderId] = useState<number | null>(null);
   const [localCarts, setLocalCarts] = useState<LocalCartsState>({});
 
+  // Thêm state để lưu số tiền sau giảm giá
+  const [currentPaymentAmount, setCurrentPaymentAmount] = useState<number>(0);
+
   const hasProcessedCartRef = useRef(false);
 
-  // Load localCarts từ localStorage khi component mount
+  // Load localCarts từ localStorage
   useEffect(() => {
     const savedLocalCarts = localStorage.getItem(LOCAL_CARTS_STORAGE_KEY);
     if (savedLocalCarts) {
@@ -85,7 +94,7 @@ const LiveOrderPage: React.FC = () => {
     }
   }, []);
 
-  // Lưu localCarts vào localStorage mỗi khi localCarts thay đổi
+  // Lưu localCarts vào localStorage
   useEffect(() => {
     localStorage.setItem(LOCAL_CARTS_STORAGE_KEY, JSON.stringify(localCarts));
   }, [localCarts]);
@@ -128,7 +137,6 @@ const LiveOrderPage: React.FC = () => {
         const pendingId = parseInt(pendingOrderId, 10);
         if (loadedOrders.some((o) => o.id === pendingId)) {
           targetOrderId = pendingId;
-          console.log(`✅ Sử dụng pendingOrderId: ${pendingId}`);
         }
         sessionStorage.removeItem(storageKeys.pendingOrder);
       }
@@ -137,13 +145,11 @@ const LiveOrderPage: React.FC = () => {
         const savedId = parseInt(savedActiveId, 10);
         if (loadedOrders.some((o) => o.id === savedId)) {
           targetOrderId = savedId;
-          console.log(`✅ Sử dụng savedActiveId: ${savedId}`);
         }
       }
 
       if (!targetOrderId) {
         targetOrderId = loadedOrders[0].id;
-        console.log(`✅ Fallback to first order: ${targetOrderId}`);
       }
 
       setActiveOrderId(targetOrderId);
@@ -159,7 +165,6 @@ const LiveOrderPage: React.FC = () => {
   useEffect(() => {
     if (activeOrderId && storageKeys) {
       sessionStorage.setItem(storageKeys.activeOrder, activeOrderId.toString());
-      console.log(`💾 Saved activeOrderId: ${activeOrderId}`);
     }
   }, [activeOrderId, storageKeys]);
 
@@ -174,29 +179,16 @@ const LiveOrderPage: React.FC = () => {
       return;
     }
 
-    console.log("🔄 Phát hiện global cart, đang chuyển vào local cart...");
-    console.log("📦 Cart items:", cartItems);
-    console.log("🎯 Active Order ID:", activeOrderId);
-
     const pendingOrderId = sessionStorage.getItem(storageKeys.pendingOrder);
     const targetOrderId = pendingOrderId
       ? parseInt(pendingOrderId, 10)
       : activeOrderId;
 
-    console.log("🎯 Target Order ID:", targetOrderId);
-
     const targetOrderExists = orders.some((o) => o.id === targetOrderId);
     if (!targetOrderExists) {
-      console.error(`❌ Order ${targetOrderId} không tồn tại trong danh sách`);
-      console.log(
-        "📋 Available orders:",
-        orders.map((o) => o.id)
-      );
       clearCart();
       return;
     }
-
-    console.log(`✅ Transfer cart vào Order: ${targetOrderId}`);
 
     setLocalCarts((prevLocalCarts) => {
       const newLocalCarts = { ...prevLocalCarts };
@@ -208,34 +200,25 @@ const LiveOrderPage: React.FC = () => {
         );
         if (existingItem) {
           existingItem.quantity += item.quantity;
-          // Giữ nguyên ghi chú nếu có, nếu item mới có ghi chú thì cập nhật
           if (item.note) {
             existingItem.note = item.note;
           }
-          console.log(
-            `➕ Tăng số lượng ${item.name}: ${existingItem.quantity}`
-          );
         } else {
           currentCart.push({
             menuItemId: Number(item.id),
             quantity: item.quantity,
             name: item.name,
             price: item.price,
-            note: item.note, // Thêm ghi chú nếu có
+            note: item.note,
           });
-          console.log(`🆕 Thêm mới ${item.name}: ${item.quantity}`);
         }
       }
 
       newLocalCarts[targetOrderId] = currentCart;
-      console.log(`✅ Local cart updated:`, newLocalCarts[targetOrderId]);
       return newLocalCarts;
     });
 
     if (targetOrderId !== activeOrderId) {
-      console.log(
-        `🔄 Switch active order từ ${activeOrderId} → ${targetOrderId}`
-      );
       setActiveOrderId(targetOrderId);
     }
 
@@ -271,49 +254,27 @@ const LiveOrderPage: React.FC = () => {
     setError(null);
 
     try {
-      // Lấy order hiện tại để merge số lượng
-      const activeOrder = orders.find((o) => o.id === activeOrderId);
-      if (!activeOrder) {
-        throw new Error("Không tìm thấy order hiện tại");
-      }
+      // CHỈ gửi những món mới từ local cart, không merge với database
+      const newItems: OrderDetailRequest[] = itemsToSubmit.map((item) => ({
+        menuItemId: item.menuItemId,
+        quantity: item.quantity, // Chỉ gửi số lượng mới thêm
+        specialRequirements: item.note || "",
+      }));
 
-      // Tạo map để merge số lượng
-      const mergedItems: OrderDetailRequest[] = [];
-      const existingItemsMap = new Map<number, number>();
+      console.log("🔄 Chỉ gửi món mới từ local cart:", newItems);
 
-      // Lấy số lượng hiện tại từ database
-      activeOrder.items.forEach((item) => {
-        existingItemsMap.set(item.menuItem.id, item.quantity);
-      });
+      await addItemsToOrder(activeOrderId, newItems);
 
-      // Merge với items từ local cart
-      for (const localItem of itemsToSubmit) {
-        const existingQty = existingItemsMap.get(localItem.menuItemId) || 0;
-        const totalQty = existingQty + localItem.quantity;
-
-        mergedItems.push({
-          menuItemId: localItem.menuItemId,
-          quantity: totalQty,
-          specialRequirements: localItem.note || "",
-        });
-
-        // Cập nhật map để tránh trùng lặp
-        existingItemsMap.set(localItem.menuItemId, totalQty);
-      }
-
-      // Gửi items đã merged lên server
-      await addItemsToOrder(activeOrderId, mergedItems);
-
-      // Xóa local cart
+      // Xóa local cart sau khi gửi thành công
       setLocalCarts((prev) => ({
         ...prev,
         [activeOrderId]: [],
       }));
 
-      // Load lại orders để cập nhật UI
+      // Tải lại orders để cập nhật dữ liệu mới nhất
       await loadOrders(tableId);
 
-      console.log("✅ Đã merge và cập nhật số lượng thành công");
+      console.log("✅ Đã thêm món mới thành công");
     } catch (err) {
       console.error("Lỗi khi gửi đơn hàng:", err);
       setError("Không thể gửi đơn hàng. Vui lòng thử lại.");
@@ -323,11 +284,20 @@ const LiveOrderPage: React.FC = () => {
     }
   };
 
-  const handleRequestPayment = async () => {
-    console.log("🔔 handleRequestPayment called");
-    console.log("Active Order ID:", activeOrderId);
-    console.log("Local Cart:", localCarts[activeOrderId]);
+  const handleShowBillPreview = () => {
+    if (!activeOrderId) return;
 
+    const currentLocalCart = localCarts[activeOrderId] || [];
+    if (currentLocalCart.length > 0) {
+      setError("Vui lòng gửi thông báo món ăn trước khi xem tạm tính.");
+      setShowError(true);
+      return;
+    }
+
+    setShowBillPreview(true);
+  };
+
+  const handleRequestPayment = () => {
     if (!activeOrderId) {
       setError("Vui lòng chọn order để thanh toán.");
       setShowError(true);
@@ -336,45 +306,109 @@ const LiveOrderPage: React.FC = () => {
 
     const currentLocalCart = localCarts[activeOrderId] || [];
     if (currentLocalCart.length > 0) {
-      console.log("❌ Còn món chưa gửi thông báo:", currentLocalCart.length);
       setError("Vui lòng gửi thông báo món ăn trước khi thanh toán.");
       setShowError(true);
       return;
     }
 
-    console.log("✅ Hiển thị modal thanh toán");
+    if (confirmedTotal <= 0) {
+      setError("Không thể thanh toán với số tiền 0đ.");
+      setShowError(true);
+      return;
+    }
+
     setShowPaymentModal(true);
   };
 
-  const processPayment = async () => {
+  const processPayment = async (params: {
+    paymentMethod: "cash" | "bank_transfer";
+    discountCode?: string;
+    promotion?: any;
+    finalAmount: number;
+  }) => {
+    console.log("🔔 processPayment called với:", params);
+
+    if (!activeOrderId) return;
+
+    // Sử dụng finalAmount từ params thay vì confirmedTotal
+    const amountToPay = params.finalAmount;
+    setCurrentPaymentAmount(amountToPay);
+
+    if (params.paymentMethod === "cash") {
+      console.log("💵 Processing cash payment với số tiền:", amountToPay);
+      setShowPaymentModal(false);
+      setShowCashPaymentModal(true);
+    } else if (params.paymentMethod === "bank_transfer") {
+      console.log("🏦 Processing bank transfer với số tiền:", amountToPay);
+      setIsProcessingPayment(true);
+      setError(null);
+
+      try {
+        const currentUrl = window.location.origin;
+        const returnUrl = `${currentUrl}/payment-success?orderId=${activeOrderId}&tableId=${tableId}`;
+        const cancelUrl = `${currentUrl}/live-order?tableId=${tableId}`;
+
+        console.log("💰 Số tiền thanh toán ngân hàng:", {
+          original: confirmedTotal,
+          final: params.finalAmount,
+          used: amountToPay,
+        });
+
+        // Tạo object payment data
+        const paymentData: any = {
+          orderId: activeOrderId,
+          returnUrl: returnUrl,
+          cancelUrl: cancelUrl,
+        };
+
+        // Thêm thông tin giảm giá nếu có
+        if (params.discountCode) {
+          paymentData.promotionCode = params.discountCode;
+          console.log("🎫 Gửi mã giảm giá:", params.discountCode);
+        }
+
+        console.log("📤 Gửi dữ liệu thanh toán:", paymentData);
+
+        const paymentResponse = await createPaymentLink(paymentData);
+
+        if (paymentResponse.checkoutUrl) {
+          console.log("✅ Redirecting to:", paymentResponse.checkoutUrl);
+          window.location.href = paymentResponse.checkoutUrl;
+        } else {
+          throw new Error("Không nhận được link thanh toán");
+        }
+      } catch (err) {
+        console.error("Lỗi khi tạo payment link:", err);
+        setError("Không thể tạo link thanh toán. Vui lòng thử lại.");
+        setShowError(true);
+      } finally {
+        setIsProcessingPayment(false);
+        setShowPaymentModal(false);
+      }
+    }
+  };
+
+  const processCashPaymentHandler = async () => {
     if (!activeOrderId) return;
 
     setIsProcessingPayment(true);
     setError(null);
 
     try {
-      const currentUrl = window.location.origin;
-      const returnUrl = `${currentUrl}/payment-success?orderId=${activeOrderId}&tableId=${tableId}`;
-      const cancelUrl = `${currentUrl}/live-order?tableId=${tableId}`;
+      // Gọi API thanh toán tiền mặt với số tiền sau giảm giá
+      await processCashPayment(activeOrderId, currentPaymentAmount);
 
-      const paymentResponse = await createPaymentLink({
-        orderId: activeOrderId,
-        returnUrl: returnUrl,
-        cancelUrl: cancelUrl,
-      });
+      console.log("✅ Cash payment successful");
 
-      if (paymentResponse.checkoutUrl) {
-        window.location.href = paymentResponse.checkoutUrl;
-      } else {
-        throw new Error("Không nhận được link thanh toán");
-      }
+      // Redirect về trang tables
+      navigate("/tables?payment=success");
     } catch (err) {
-      console.error("Lỗi khi tạo payment link:", err);
-      setError("Không thể tạo link thanh toán. Vui lòng thử lại.");
+      console.error("Lỗi khi thanh toán tiền mặt:", err);
+      setError("Không thể xử lý thanh toán. Vui lòng thử lại.");
       setShowError(true);
     } finally {
       setIsProcessingPayment(false);
-      setShowPaymentModal(false);
+      setShowCashPaymentModal(false);
     }
   };
 
@@ -383,7 +417,6 @@ const LiveOrderPage: React.FC = () => {
     setShowCallStaffModal(false);
   };
 
-  // Hàm xử lý mở modal ghi chú
   const handleEditNote = (
     menuItemId: number,
     name: string,
@@ -392,7 +425,6 @@ const LiveOrderPage: React.FC = () => {
     setEditingNoteItem({ menuItemId, name, currentNote });
   };
 
-  // Hàm lưu ghi chú
   const handleSaveNote = (note: string) => {
     if (!editingNoteItem || !activeOrderId) return;
 
@@ -406,7 +438,6 @@ const LiveOrderPage: React.FC = () => {
       if (existingItem) {
         existingItem.note = note;
       } else {
-        // Nếu item chưa có trong local cart, tạo mới
         const displayItem = displayItems.find(
           (item) => item.menuItemId === editingNoteItem.menuItemId
         );
@@ -428,7 +459,6 @@ const LiveOrderPage: React.FC = () => {
     setEditingNoteItem(null);
   };
 
-  // Hàm xoá ghi chú
   const handleRemoveNote = () => {
     if (!editingNoteItem || !activeOrderId) return;
 
@@ -452,11 +482,11 @@ const LiveOrderPage: React.FC = () => {
 
   const displayItems = useMemo(() => {
     if (!activeOrderId) return [];
-  
+
     const activeOrder = orders.find((o) => o.id === activeOrderId);
     const dbItems = activeOrder ? activeOrder.items : [];
     const localItems = localCarts[activeOrderId] || [];
-  
+
     type DisplayItem = {
       menuItemId: number;
       name: string;
@@ -465,16 +495,13 @@ const LiveOrderPage: React.FC = () => {
       localQty: number;
       note?: string;
     };
-  
+
     const itemMap = new Map<number, DisplayItem>();
-  
-    // Add DB items - GỘP các item có cùng menuItemId
+
     for (const item of dbItems) {
       const existing = itemMap.get(item.menuItem.id);
       if (existing) {
-        // Nếu đã tồn tại, cộng dồn số lượng
         existing.dbQty += item.quantity;
-        // Giữ ghi chú từ item đầu tiên, hoặc bạn có thể xử lý khác tùy nhu cầu
         if (!existing.note && item.specialRequirements) {
           existing.note = item.specialRequirements;
         }
@@ -489,13 +516,11 @@ const LiveOrderPage: React.FC = () => {
         });
       }
     }
-  
-    // Add local items
+
     for (const item of localItems) {
       const existing = itemMap.get(item.menuItemId);
       if (existing) {
         existing.localQty += item.quantity;
-        // Ưu tiên ghi chú từ local cart (nếu có)
         if (item.note) {
           existing.note = item.note;
         }
@@ -510,40 +535,42 @@ const LiveOrderPage: React.FC = () => {
         });
       }
     }
-  
-    return Array.from(itemMap.values());
+
+    const result = Array.from(itemMap.values());
+    console.log("🔄 Display Items (đã gộp):", result);
+    return result;
   }, [activeOrderId, orders, localCarts]);
-  const handleQuantityChange = (menuItemId: number, totalQuantity: number) => {
+
+  // Sửa lỗi: Cập nhật đúng số lượng local khi thay đổi
+  const handleQuantityChange = (menuItemId: number, newTotalQuantity: number) => {
     if (!activeOrderId) return;
 
     const displayItem = displayItems.find((i) => i.menuItemId === menuItemId);
     if (!displayItem) return;
 
     const dbQty = displayItem.dbQty;
-    const newLocalQty = totalQuantity - dbQty;
+    const newLocalQty = Math.max(0, newTotalQuantity - dbQty);
 
     setLocalCarts((prevLocalCarts) => {
       const newLocalCarts = { ...prevLocalCarts };
       let currentCart = newLocalCarts[activeOrderId] || [];
 
-      if (newLocalQty <= 0) {
-        // Remove item from local cart
+      if (newLocalQty === 0) {
+        // Nếu không còn số lượng local, xóa item khỏi local cart
         currentCart = currentCart.filter((i) => i.menuItemId !== menuItemId);
       } else {
-        // Update or add item
         const existingItem = currentCart.find(
           (i) => i.menuItemId === menuItemId
         );
         if (existingItem) {
           existingItem.quantity = newLocalQty;
-          // Giữ nguyên ghi chú khi thay đổi số lượng
         } else {
           currentCart.push({
             menuItemId: menuItemId,
             quantity: newLocalQty,
             name: displayItem.name,
             price: displayItem.price,
-            note: displayItem.note, // Giữ nguyên ghi chú
+            note: displayItem.note,
           });
         }
       }
@@ -558,10 +585,10 @@ const LiveOrderPage: React.FC = () => {
   const newItemsTotal = currentLocalCart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
-  ); // Bỏ chia 100
+  );
 
   const confirmedTotal = useMemo(() => {
-    return displayItems.reduce((sum, item) => sum + item.price * item.dbQty, 0); // Bỏ chia 100
+    return displayItems.reduce((sum, item) => sum + item.price * item.dbQty, 0);
   }, [displayItems]);
 
   const grandTotal = confirmedTotal + newItemsTotal;
@@ -577,7 +604,6 @@ const LiveOrderPage: React.FC = () => {
     if (!tableId || !activeOrderId || !storageKeys) return;
 
     sessionStorage.setItem(storageKeys.pendingOrder, activeOrderId.toString());
-    console.log(`🎯 Set pendingOrderId: ${activeOrderId}`);
 
     navigate(`/menu-order?tableId=${tableId}`, {
       state: { targetOrderId: activeOrderId },
@@ -585,6 +611,15 @@ const LiveOrderPage: React.FC = () => {
   };
 
   const currentOrderIndex = orders.findIndex((o) => o.id === activeOrderId) + 1;
+
+  const billItems = displayItems
+    .filter((item) => item.dbQty > 0)
+    .map((item) => ({
+      name: item.name,
+      quantity: item.dbQty,
+      price: item.price,
+      note: item.note,
+    }));
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
@@ -715,7 +750,8 @@ const LiveOrderPage: React.FC = () => {
         <div className="grid grid-cols-3 gap-2">
           <button
             className="h-11 rounded-lg border-2 border-blue-500 bg-white hover:bg-blue-50 active:bg-blue-100 flex items-center justify-center gap-1.5 text-sm font-medium text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isSubmitting}
+            disabled={isSubmitting || currentLocalCart.length > 0}
+            onClick={handleShowBillPreview}
           >
             <FileText className="h-4 w-4" />
             Tạm tính
@@ -742,14 +778,40 @@ const LiveOrderPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Payment Modal */}
-      <PaymentModal
+      {/* Bill Preview Modal */}
+      <BillPreviewModal
+        isOpen={showBillPreview}
+        onClose={() => setShowBillPreview(false)}
+        orderNumber={currentOrderIndex}
+        tableNumber={tableId || 0}
+        items={billItems}
+        totalAmount={confirmedTotal}
+      />
+
+      <PaymentMethodModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        onConfirm={processPayment}
+        onConfirm={processPayment} // Đảm bảo truyền hàm đã sửa
         isProcessing={isProcessingPayment}
         orderNumber={currentOrderIndex}
+        tableNumber={tableId || 0}
+        items={displayItems.map((item) => ({
+          name: item.name,
+          quantity: item.dbQty + item.localQty,
+          price: item.price,
+          note: item.note,
+        }))}
         totalAmount={confirmedTotal}
+      />
+
+      {/* Cash Payment Modal */}
+      <CashPaymentModal
+        isOpen={showCashPaymentModal}
+        onClose={() => setShowCashPaymentModal(false)}
+        onConfirm={processCashPaymentHandler}
+        totalAmount={currentPaymentAmount} // Sử dụng số tiền sau giảm giá
+        items={billItems}
+        isProcessing={isProcessingPayment}
       />
 
       {/* Call Staff Modal */}
