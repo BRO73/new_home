@@ -57,9 +57,7 @@ const WelcomeSection = () => {
             </h2>
 
             <p className="text-muted-foreground text-lg">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+             Discover flavorful dishes made with fresh ingredients, prepared with care to give you an unforgettable dining experience. Enjoy great food, warm service, and a relaxing atmosphere designed to make every visit special.
             </p>
 
             <div className="flex gap-4 pt-4">
