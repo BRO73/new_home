@@ -3,10 +3,10 @@ import chefImage from "@/assets/chef.jpg";
 import MenuButton from "./MenuButton";
 import BookingButton from "./BookingButton";
 const features = [
-  "Lorem ipsum dolor sit amet, consectetur.",
-  "Lorem ipsum dolor sit amet, consectetur.",
-  "Lorem ipsum dolor sit amet, consectetur.",
-  "Lorem ipsum dolor sit amet, consectetur.",
+  "Expertise in international and local cuisine.",
+  "Creative dishes that delight your senses.",
+  "Fresh, high-quality ingredients in every meal.",
+  "Commitment to flavor, presentation, and satisfaction.",
 ];
 
 const ChefSection = () => {
@@ -34,8 +34,7 @@ const ChefSection = () => {
             </h2>
 
             <p className="text-muted-foreground">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              Our chefs bring years of experience and passion to every dish, ensuring every meal is crafted with the finest ingredients and utmost care.
             </p>
 
             <div className="grid sm:grid-cols-2 gap-4">
