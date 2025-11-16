@@ -554,19 +554,20 @@ const BookingForm = ({ selectedTables = [], onSelectedTablesChange }) => {
                   >
                     All
                   </button>
-                  {categories.map((catName, index) => (
+                  {categories.map((cat, index) => (
                       <button
                           key={index}
-                          onClick={() => setSelectedCategory(catName)}
+                          onClick={() => setSelectedCategory(cat.name)}
                           className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition ${
-                              selectedCategory === catName
+                              selectedCategory === cat.name
                                   ? "bg-blue-600 text-white"
                                   : "bg-gray-100 hover:bg-gray-200"
                           }`}
                       >
-                        {catName}
+                        {cat.name}
                       </button>
                   ))}
+
                 </div>
 
                 {/* Cart Summary */}
