@@ -3,10 +3,8 @@ import axios from "axios";
 // Create Axios instance
 const api = axios.create({
   // baseURL: "http://192.168.1.68:8082/api",
-  baseURL: " https://introspectible-ernest-brainsickly.ngrok-free.dev",
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: " https://be-aynl.onrender.com/api",
+  headers: {},
   timeout: 10000,
 });
 
