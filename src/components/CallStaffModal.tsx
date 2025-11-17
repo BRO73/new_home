@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom"; // Thêm import
 import { IconPayment, IconUtensils, IconQuestion, IconOther } from "@/components/Icons";
 
 interface CallStaffModalProps {
@@ -12,7 +13,7 @@ const callOptions = [
   { title: "Thanh toán", icon: <IconPayment /> },
   { title: "Thêm chén bát, dao nĩa", icon: <IconUtensils /> },
   { title: "Thắc mắc về món", icon: <IconQuestion /> },
-  { title: "Khác", icon: <IconOther /> },
+  { title: "Feedback", icon: <IconOther /> },
 ];
 
 export const CallStaffModal: React.FC<CallStaffModalProps> = ({
@@ -21,7 +22,20 @@ export const CallStaffModal: React.FC<CallStaffModalProps> = ({
   onSelectOption,
   tableInfo,
 }) => {
+  const navigate = useNavigate(); // Thêm hook
+
   if (!isOpen) return null;
+
+  const handleOptionClick = (title: string) => {
+    if (title === "Feedback") {
+      navigate('/feedback'); // Chuyển hướng đến trang feedback
+      onClose(); // Đóng modal
+    } else {
+      onSelectOption(title);
+      // Không đóng modal ở đây để giữ nguyên hành vi cũ
+      // Modal sẽ được đóng bởi logic trong onSelectOption của component cha
+    }
+  };
 
   return (
     <div
@@ -39,7 +53,7 @@ export const CallStaffModal: React.FC<CallStaffModalProps> = ({
           {callOptions.map((option) => (
             <button
               key={option.title}
-              onClick={() => onSelectOption(option.title)}
+              onClick={() => handleOptionClick(option.title)} // Sử dụng hàm xử lý mới
               className="w-full flex items-center gap-3 p-4 bg-gray-50 rounded-lg text-gray-800 font-semibold text-left hover:bg-gray-100 transition-colors"
             >
               {option.icon}
