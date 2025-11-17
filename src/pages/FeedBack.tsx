@@ -5,7 +5,7 @@ import StarRating from "@/components/StarRating";
 import { toast } from "sonner";
 import { MessageSquareHeart, Send, Sparkles } from "lucide-react";
 import {  createReview } from "@/api/review.api"; 
-import { getCustomerByPhoneNumber } from "@/api/customer.api"; 
+import { getCustomerByPhone } from "@/api/customer.api"; 
 
 const FeedBack = () => {
   const [rating, setRating] = useState(0);
@@ -35,7 +35,7 @@ const FeedBack = () => {
 
     try {
       // Step 1: Get customer by phone number
-      const customer = await getCustomerByPhoneNumber(userPhone);
+      const customer = await getCustomerByPhone(userPhone);
       
       // Step 2: Create review with customerId
       const reviewRequest = {
